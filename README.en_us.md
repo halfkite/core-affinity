@@ -101,14 +101,6 @@ Commands are clickable for completion in the in-game help. The gray text after `
 
 `/coreaffinity language zh_cn` and `/coreaffinity language en_us` ask whether to make the selected language server-wide; declining keeps it personal. Core-list edits stay pending until a permission-level-2 player clicks **Confirm apply**, which updates the binding and saves `core-affinity.json5`.
 
-## Logs and verification
-
-On the first tick, the mod logs the CPU topology and `bound and verified`. The latter means the native affinity was set and read back successfully. `allowed` is the original CPU allowance, `performanceClass` is the operating-system performance class, and `physicalCore` identifies SMT siblings.
-
-On Windows, inspect the `Server thread` with a tool that shows thread affinity; Task Manager's process affinity is a different setting. On Linux, inspect `/proc/<pid>/task/<tid>/status` and its `Cpus_allowed_list` field.
-
-Configuration errors, native-library failures, and OS rejections are logged and Minecraft continues running. The mod does not continuously poll or reset affinity. An external tool can overwrite the mask. On shutdown, the original mask is restored on the same thread.
-
 ## Platform boundaries
 
 - Windows 10+/Windows Server 2016+ 64-bit: uses `GetSystemCpuSetInformation` and `SetThreadGroupAffinity`. The current backend stays inside the initial processor group and does not migrate across groups.
@@ -116,25 +108,3 @@ Configuration errors, native-library failures, and OS rejections are logged and 
 - macOS and other unsupported systems leave affinity unchanged and log a notice.
 - On Linux, newly created threads can inherit the creator's affinity. The mod does not intercept other mods' thread creation, and the current Shared group is informational.
 - Pinning a server to one core can reduce migration but also reduce scheduling headroom. It does not guarantee higher TPS or FPS.
-
-## Project structure and NeoForge interface
-
-```text
-common/  Loader-neutral configuration, selection policy, and Windows/Linux backends
-fabric/  Fabric initialization, commands, and main-thread mixins
-```
-
-A future NeoForge adapter can reuse `common`: call `AffinityService.load(configDirectory)`, bind the actual server/client main thread with `bindCurrentThread(Role.SERVER/CLIENT)`, and restore it with `restoreCurrentThread()` during shutdown. This repository currently contains only the Fabric 1.21.1 implementation.
-
-## Build and validation
-
-```powershell
-$env:JAVA_HOME='Path to JDK 21'
-.\gradlew.bat build :common:nativeSmoke
-```
-
-The installable output is `fabric/build/libs/core-affinity-fabric-1.0.0+mc1.21.1.jar`. `-sources.jar` is not an installable mod. `common:test` checks selection and JSON5 migration; `common:nativeSmoke` performs native bind, readback, live rebind, SMT filtering, and restoration in a short-lived test JVM.
-
-Timestamped build archives are stored under `mod-builds/`. Each archive contains the installable JAR and a SHA-256 manifest. See `TESTING.md` for Carpet and multi-server results.
-
-License information for the bundled JNA dependency is in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
