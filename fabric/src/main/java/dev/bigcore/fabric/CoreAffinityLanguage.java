@@ -15,6 +15,7 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 /** Resource-backed command text and language selection. */
@@ -23,6 +24,7 @@ final class CoreAffinityLanguage {
     private static final Pattern LANGUAGE_FILE = Pattern.compile("coreaffinity_([a-z0-9_]+)\\.properties");
     private static final Pattern CARPET_LANGUAGE = Pattern.compile("(?im)^\\s*(?:language|lang)\\s*[=: ]\\s*([a-z]{2}(?:[_-][a-z]{2})?)\\s*$");
     private static volatile List<String> cachedLanguages;
+    private static final Map<String, Map<String, String>> cachedProperties = new ConcurrentHashMap<>();
     private CoreAffinityLanguage() { }
 
     /** Resolve auto exactly once during mod initialization, then persist the concrete language. */
@@ -61,15 +63,21 @@ final class CoreAffinityLanguage {
 
     static String value(String language, String key) {
         String selected = supportedOrEnglish(normalize(language));
+        return cachedProperties.computeIfAbsent(selected, CoreAffinityLanguage::loadProperties).getOrDefault(key, key);
+    }
+
+    private static Map<String, String> loadProperties(String selected) {
         Properties properties = new Properties();
         String resource = "/assets/core_affinity/lang/coreaffinity_" + selected + ".properties";
         try (InputStream stream = CoreAffinityLanguage.class.getResourceAsStream(resource)) {
             if (stream == null) throw new IllegalStateException("Missing language resource " + resource);
             properties.load(new InputStreamReader(stream, StandardCharsets.UTF_8));
         } catch (Exception e) {
-            return key;
+            return Map.of();
         }
-        return properties.getProperty(key, key);
+        Map<String, String> result = new HashMap<>();
+        for (String key : properties.stringPropertyNames()) result.put(key, properties.getProperty(key, key));
+        return Map.copyOf(result);
     }
 
     static String label(String language) { return value(language, "language." + supportedOrEnglish(normalize(language))); }
