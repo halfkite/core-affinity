@@ -2,7 +2,7 @@
 
 [English](README.en_us.md)
 
-Minecraft **1.21.1 · Fabric · Java 21**。将独立服务端/单人世界服务端的 `Server thread`、客户端的游戏与渲染主线程绑定到大核，或指定的逻辑 CPU。通过原生线程亲和性限制调度位置；不修改整个 Java 进程的亲和性。
+Minecraft **1.21.1 · Fabric · Java 21**。将独立服务端/单人世界服务端的 `Server thread`、客户端游戏主线程绑定到大核，或指定的逻辑 CPU。通过原生线程亲和性限制调度位置；不修改整个 Java 进程的亲和性。
 
 ## 安装
 
