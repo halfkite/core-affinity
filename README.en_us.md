@@ -88,15 +88,15 @@ Check `physicalCore` in the startup log. Two logical CPUs with the same `physica
 Commands are clickable for completion in the in-game help. The gray text after `#` is the short description.
 
 ```text
-/coreaffinity help #Show help
-/coreaffinity language <language> #Set your display language
-/coreaffinity list #Show CPU core groups
-/coreaffinity assign <cpu> <main|shared|disabled|unassigned> #Change a core group
-/coreaffinity disable-all <p|e> #Disable all P-cores or E-cores
-/coreaffinity language global <language> #Set the server-wide language
-/coreaffinity language personal <language> #Set only your own language
-/coreaffinity smt <off|on> #Set main-thread SMT filtering
-/coreaffinity apply <confirmation-token> #Apply pending groups
+/coreaffinity help                                                     #Show help
+/coreaffinity language <language>                                      #Set your display language
+/coreaffinity list                                                     #Show CPU core groups
+/coreaffinity assign <cpu> <main|shared|disabled|unassigned>           #Change a core group
+/coreaffinity disable-all <p|e>                                       #Disable all P-cores or E-cores
+/coreaffinity language global <language>                              #Set the server-wide language
+/coreaffinity language personal <language>                            #Set only your own language
+/coreaffinity smt <off|on>                                            #Set main-thread SMT filtering
+/coreaffinity apply <confirmation-token>                              #Apply pending groups
 ```
 
 `/coreaffinity language zh_cn` and `/coreaffinity language en_us` ask whether to make the selected language server-wide; declining keeps it personal. Core-list edits stay pending until a permission-level-2 player clicks **Confirm apply**, which updates the binding and saves `core-affinity.json5`.

@@ -96,15 +96,33 @@ public final class CoreAffinityCommand {
 
     private static int showHelp(ServerCommandSource source, String language) {
         feedback(source, CoreAffinityLanguage.text(language, "help.title").formatted(Formatting.GOLD));
+        int commandWidth = helpCommandWidth(language);
         for (int i = 1; i <= 9; i++) {
-            Text line = helpLine(language, i);
+            Text line = helpLine(language, i, commandWidth);
             if (line != null) feedback(source, line);
         }
         feedback(source, languageButtons(language));
         return 1;
     }
 
-    private static Text helpLine(String language, int number) {
+    private static int helpCommandWidth(String language) {
+        int width = 0;
+        for (int number = 1; number <= 9; number++) {
+            String prefix = "help.line." + number;
+            String command = CoreAffinityLanguage.value(language, prefix + ".command");
+            String description = CoreAffinityLanguage.value(language, prefix + ".description");
+            if (!command.equals(prefix + ".command") && !description.equals(prefix + ".description")) {
+                width = Math.max(width, displayWidth(command));
+            }
+        }
+        return width;
+    }
+
+    private static int displayWidth(String value) {
+        return value.codePoints().map(codePoint -> codePoint > 0xFF ? 2 : 1).sum();
+    }
+
+    private static Text helpLine(String language, int number, int commandWidth) {
         String prefix = "help.line." + number;
         String command = CoreAffinityLanguage.value(language, prefix + ".command");
         String description = CoreAffinityLanguage.value(language, prefix + ".description");
@@ -112,9 +130,10 @@ public final class CoreAffinityCommand {
             String suggestion = CoreAffinityLanguage.value(language, prefix + ".suggest");
             if (suggestion.equals(prefix + ".suggest")) suggestion = command;
             String finalSuggestion = suggestion;
+            int padding = Math.max(1, commandWidth - displayWidth(command) + 1);
             return Text.literal(command).formatted(Formatting.WHITE)
                     .styled(style -> style.withClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, finalSuggestion)))
-                    .append(Text.literal(" # ").formatted(Formatting.GRAY))
+                    .append(Text.literal(" ".repeat(padding) + "# ").formatted(Formatting.GRAY))
                     .append(Text.literal(description).formatted(Formatting.GRAY));
         }
         String fallback = CoreAffinityLanguage.value(language, prefix);

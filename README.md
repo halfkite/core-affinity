@@ -97,15 +97,15 @@ CPU 编号从 0 开始。Windows 编号为 `processor group * 64 + group 内编�
 帮助中的白色命令可点击补全，灰色 `#` 后是简短说明。语言参数支持自动补全，候选项来自模组语言文件。
 
 ```text
-/coreaffinity help #获取帮助
-/coreaffinity language <语言> #设置自己的显示语言
-/coreaffinity list #查看 CPU 核心分组
-/coreaffinity assign <核心编号> <分组> #修改核心分组
-/coreaffinity disable-all <p|e> #一键禁用 P 核或 E 核
-/coreaffinity language global <语言> #设置全服默认语言
-/coreaffinity language personal <语言> #仅设置自己的语言
-/coreaffinity smt <off|on> #设置主线程超线程过滤
-/coreaffinity apply <确认令牌> #确认应用待处理分组
+/coreaffinity help                                      #获取帮助
+/coreaffinity language <语言>                           #设置自己的显示语言
+/coreaffinity list                                      #查看 CPU 核心分组
+/coreaffinity assign <核心编号> <分组>                  #修改核心分组
+/coreaffinity disable-all <p|e>                        #一键禁用 P 核或 E 核
+/coreaffinity language global <语言>                   #设置全服默认语言
+/coreaffinity language personal <语言>                 #仅设置自己的语言
+/coreaffinity smt <off|on>                             #设置主线程超线程过滤
+/coreaffinity apply <确认令牌>                         #确认应用待处理分组
 ```
 
 玩家执行 `/coreaffinity language zh_cn` 或 `/coreaffinity language en_us` 后，可以在聊天栏选择是否设为全服默认；不确认则只改变自己的显示。核心列表中的按钮修改待应用方案，权限等级 2 的玩家点击确认后才会在线更新绑定并保存配置。
