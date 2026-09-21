@@ -1,12 +1,12 @@
 {
   "schemaVersion": 1,
-  "id": "big_core_affinity",
+  "id": "core_affinity",
   "version": "${version}",
   "name": "Core Affinity",
   "description": "Bind Minecraft main threads to performance cores or explicitly selected CPUs.",
   "environment": "*",
   "license": "MIT",
   "entrypoints": { "main": ["dev.bigcore.fabric.BigCoreFabric"] },
-  "mixins": ["big_core_affinity.mixins.json"],
+  "mixins": ["core_affinity.mixins.json"],
   "depends": { "fabricloader": ">=0.16.14", "minecraft": "1.21.1", "java": ">=21" }
 }

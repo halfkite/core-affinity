@@ -19,7 +19,7 @@ import java.util.stream.Stream;
 
 /** Resource-backed command text and language selection. */
 final class ServerCoreLanguage {
-    private static final String LANGUAGE_DIRECTORY = "assets/big_core_affinity/lang";
+    private static final String LANGUAGE_DIRECTORY = "assets/core_affinity/lang";
     private static final Pattern LANGUAGE_FILE = Pattern.compile("servercore_([a-z0-9_]+)\\.properties");
     private static final Pattern CARPET_LANGUAGE = Pattern.compile("(?im)^\\s*(?:language|lang)\\s*[=: ]\\s*([a-z]{2}(?:[_-][a-z]{2})?)\\s*$");
     private ServerCoreLanguage() { }
@@ -44,7 +44,7 @@ final class ServerCoreLanguage {
     static String value(String language, String key) {
         String selected = supportedOrEnglish(normalize(language));
         Properties properties = new Properties();
-        String resource = "/assets/big_core_affinity/lang/servercore_" + selected + ".properties";
+        String resource = "/assets/core_affinity/lang/servercore_" + selected + ".properties";
         try (InputStream stream = ServerCoreLanguage.class.getResourceAsStream(resource)) {
             if (stream == null) throw new IllegalStateException("Missing language resource " + resource);
             properties.load(new InputStreamReader(stream, StandardCharsets.UTF_8));
@@ -58,7 +58,7 @@ final class ServerCoreLanguage {
 
     static List<String> supportedLanguages() {
         SortedSet<String> languages = new TreeSet<>();
-        Optional<ModContainer> container = FabricLoader.getInstance().getModContainer("big_core_affinity");
+        Optional<ModContainer> container = FabricLoader.getInstance().getModContainer("core_affinity");
         if (container.isPresent()) {
             Optional<Path> directory = container.get().findPath(LANGUAGE_DIRECTORY);
             if (directory.isPresent() && Files.isDirectory(directory.get())) {
