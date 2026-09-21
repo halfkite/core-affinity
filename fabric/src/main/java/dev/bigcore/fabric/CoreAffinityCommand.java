@@ -250,10 +250,14 @@ public final class CoreAffinityCommand {
             feedback(source, CoreAffinityLanguage.text(language, "list.disabled_help").formatted(Formatting.GRAY));
             feedback(source, CoreAffinityLanguage.text(language, "list.unassigned_help").formatted(Formatting.GRAY));
             feedback(source, CoreAffinityLanguage.text(language, "list.pe_help").formatted(Formatting.GRAY));
-            for (Cpu cpu : topology.stream().sorted(Comparator.comparingInt(Cpu::id)).toList()) {
+            List<Cpu> sortedTopology = topology.stream().sorted(Comparator.comparingInt(Cpu::id)).toList();
+            int labelWidth = sortedTopology.stream().mapToInt(cpu -> coreName(cpu, topology).length()).max().orElse(1);
+            for (Cpu cpu : sortedTopology) {
                 CoreGroups.Group current = groups.groupOf(cpu.id());
                 if (current == CoreGroups.Group.SHARED) current = CoreGroups.Group.UNASSIGNED;
-                Text row = Text.literal(String.format(Locale.ROOT, "%-4s:", coreName(cpu, topology)))
+                String label = coreName(cpu, topology);
+                label += " ".repeat(Math.max(0, labelWidth - label.length()));
+                Text row = Text.literal(label + ":")
                         .append(button(CoreAffinityLanguage.value(language, "button.main"), "/coreaffinity assign " + cpu.id() + " main",
                                 current == CoreGroups.Group.MAIN ? Formatting.BLUE : Formatting.GRAY))
                         .append(button(CoreAffinityLanguage.value(language, "button.disabled"), "/coreaffinity assign " + cpu.id() + " disabled",
