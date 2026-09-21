@@ -12,4 +12,7 @@ processResources {
     inputs.property 'version', project.version
     filesMatching('fabric.mod.json') { expand version: project.version }
 }
-jar { from(rootProject.file('LICENSE')) }
+jar {
+    from(rootProject.file('LICENSE'))
+    from(rootProject.file('THIRD-PARTY-NOTICES.md'))
+}
