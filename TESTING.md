@@ -56,7 +56,7 @@ Carpet 文件是 `fabric-carpet-1.21-1.4.147+v240613.jar`，兼容 Minecraft 1.2
 /coreaffinity disable-all e
 ```
 
-结果：中文帮助、英文帮助、动态语言菜单、CPU 列表、P/E 标注、核心分组命令和一键禁用 E 核均成功。帮助日志显示可点击指令与 `#` 后的灰色说明；指令使用可点击补全事件。列表行实际输出为 `0P  :[✓][✕][？]`、`10P :[✓][✕][？]`，当前分组按钮显示选中颜色，其余按钮保持灰色；快捷操作按 P/E 批量设置，最后使用“应用更改”提交。服务端随后正常执行 `stop`，退出码为 0。冒烟脚本为 [coreaffinity-command-smoke.ps1](D:/ai/dxh/test-runs/coreaffinity-command-smoke.ps1)。
+结果：中文帮助、英文帮助、动态语言菜单、CPU 列表、P/E 标注、核心分组命令和一键禁用 E 核均成功。帮助日志显示可点击指令与 `#` 后的灰色说明；指令使用可点击补全事件。列表行实际输出为 `0P  :[✔][✘][?]`、`10P :[✔][✘][?]`，当前分组按钮显示选中颜色，其余按钮保持灰色；快捷操作按 P/E 批量设置，最后使用“应用更改”提交。服务端随后正常执行 `stop`，退出码为 0。冒烟脚本为 [coreaffinity-command-smoke.ps1](D:/ai/dxh/test-runs/coreaffinity-command-smoke.ps1)。
 
 ## 核心分组与 P/E 对比测试（2026-09-21）
 
@@ -64,7 +64,7 @@ Carpet 文件是 `fabric-carpet-1.21-1.4.147+v240613.jar`，兼容 Minecraft 1.2
 
 三个日志均确认主线程分别绑定 `0:0`、`0:12`、`0:2`，没有 `Can't keep up`。四个 Carpet 假玩家分别向四个方向移动约 400–468 格并持续加载地图。45 秒压力期间 JVM 进程 CPU（一个逻辑核满载=100%）稳定阶段平均：server-a `419.9%`、server-b `417.2%`、server-c `439.5%`；峰值分别 `469.1%`、`482.5%`、`526.8%`。这说明 E 核主线程仍能被准确锁定，但该轮负载下不能仅凭总 JVM CPU 百分比断言 P/E 的 TPS 优劣；主线程绑定证据以各服 `bound and verified` 日志为准。共享核心目前保存并显示分组，当前版本只绑定服务器主线程。
 
-最新可安装归档：[mod-builds/20260921-2244](D:/ai/dxh/mod-builds/20260921-2244)，目录时间戳精确到分钟；SHA-256：`BC212CB64F9D311144D47D660F2255C940C8F78B76B773C949049A99A99B6A2B`。
+最新可安装归档：[mod-builds/20260921-2248](D:/ai/dxh/mod-builds/20260921-2248)，目录时间戳精确到分钟；SHA-256：`7DD660D0DD1A77E45F30D6F0D0115480544C235A6C4D34F344D2214E2D6CE275`。
 
 语言初始化冒烟测试使用空的 `core-affinity.json5` 和旧版 `language=auto` 配置启动 Fabric + Carpet 服务端；首次启动后生成的 JSON5 已写入 `"language": "zh_cn"`。语言来源读取发生在 ModInitializer 初始化阶段，后续指令输出不再读取 Carpet 配置文件或系统 Locale。
 

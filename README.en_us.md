@@ -105,16 +105,16 @@ Commands are clickable for completion in the in-game help. The gray text after `
 
 ```text
 CPU core groups; click a button to change
-✓: Main cores: used mainly by the game process
-✕: Disabled cores: never selected
+✔: Main cores: used mainly by the game process
+✘: Disabled cores: never selected
 ?: Unassigned cores: used by map loading and other parallel work
 P means performance core; E means efficiency core
-0P  :[✓][✕][?]
-1P  :[✓][✕][?]
-2E  :[✓][✕][?]
+0P  :[✔][✘][?]
+1P  :[✔][✘][?]
+2E  :[✔][✘][?]
 Quick actions
-[✓all P cores][✓all E cores]
-[✕all P cores][✕all E cores]
+[✔all P cores][✔all E cores]
+[✘all P cores][✘all E cores]
 [?all P cores][?all E cores]
 [Apply changes]
 ```
