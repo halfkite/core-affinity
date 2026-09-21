@@ -4,21 +4,31 @@ Minecraft **1.21.1 · Fabric · Java 21**。将独立服务端/单人世界服�
 
 ## 安装
 
-Fabric mod id 为 `core_affinity`，显示名称为 `Core Affinity`。升级时先移除旧的 `big-core-affinity-fabric` JAR，避免两个 mod id 同时加载；`config/big-core-affinity.properties` 会继续沿用。然后把 `core-affinity-fabric-1.0.0+mc1.21.1.jar` 放进对应实例的 `mods` 目录。需要 Fabric Loader 0.16.14 或更高版本；不需要 Fabric API，也不需要另装 JNA（已内嵌）。JNA 的许可证和归属见仓库中的 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)。服务端可单独安装，玩家无需安装；要绑定客户端线程则在客户端也安装。
+Fabric mod id 为 `core_affinity`，显示名称为 `Core Affinity`。升级时先移除旧的 `big-core-affinity-fabric` JAR，避免两个 mod id 同时加载；旧的 `config/big-core-affinity.properties` 会自动迁移到 `config/core-affinity.json5`。然后把 `core-affinity-fabric-1.0.0+mc1.21.1.jar` 放进对应实例的 `mods` 目录。需要 Fabric Loader 0.16.14 或更高版本；不需要 Fabric API，也不需要另装 JNA（已内嵌）。JNA 的许可证和归属见仓库中的 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)。服务端可单独安装，玩家无需安装；要绑定客户端线程则在客户端也安装。
 
-首次启动生成 `config/big-core-affinity.properties`。修改后重启对应实例。默认服务端和客户端均为 `auto`：仅在可靠检测到不同性能等级时绑定到最高等级的全部可用逻辑 CPU；拓扑不明或同构处理器上保持原状，日志提示手动配置。
+首次启动生成 `config/core-affinity.json5`。配置项支持 JSON5 的行尾注释、双语说明和尾逗号；旧 properties 文件只在新文件不存在时迁移。默认服务端和客户端均为 `auto`：仅在可靠检测到不同性能等级时绑定到最高等级的全部可用逻辑 CPU；拓扑不明或同构处理器上保持原状，日志提示手动配置。
 
-```properties
-server.mode=auto
-server.cpus=
-server.coreIndex=-1
-client.mode=auto
-client.cpus=
-client.coreIndex=-1
-language=auto
-main.cpus=
-shared.cpus=
-disabled.cpus=
+```json5
+{
+  // Core Affinity / 核心亲和性绑定
+  "language": "auto", // Display language / 显示语言
+  "server": {
+    "mode": "auto", // auto, explicit, off / 自动、指定、关闭
+    "cpus": [], // Explicit logical CPU IDs / 指定模式的逻辑 CPU 编号
+    "coreIndex": -1, // -1 all P cores / -1 表示全部 P 核
+    "avoidSmt": false // One thread per physical core / 每个物理核心只保留一个逻辑线程
+  },
+  "client": {
+    "mode": "auto", // auto, explicit, off / 自动、指定、关闭
+    "cpus": [], // Explicit logical CPU IDs / 指定模式的逻辑 CPU 编号
+    "coreIndex": -1 // -1 all P cores / -1 表示全部 P 核
+  },
+  "groups": {
+    "main": [], // Server main-thread group / 服务端主线程分组
+    "shared": [], // Reserved shared group / 预留共享分组
+    "disabled": [] // Excluded from auto selection / 从自动选核中排除
+  }
+}
 ```
 
 | 配置 | 作用 |
@@ -27,9 +37,10 @@ disabled.cpus=
 | `server.cpus` / `client.cpus` | 仅 explicit 使用；逻辑 CPU 编号，例如 `2`、`2,4`、`2-5` |
 | `server.coreIndex` / `client.coreIndex` | 仅 auto 使用；`-1` 使用全部大核；`0`、`1`…选择第几个可用物理大核上的一个逻辑线程 |
 | `language` | 指令语言；`auto` 先看本模组配置，其次尝试 Carpet 语言设置，最后使用系统语言；也可写 `zh_cn` 或 `en_us` |
-| `main.cpus` | `/servercore list` 中的主核心分组，逗号或范围分隔；服务端重启后优先绑定这些逻辑 CPU |
-| `shared.cpus` | 共享核心分组，供后续线程调度接口使用；当前版本保留分组并显示，不改变其他线程 |
-| `disabled.cpus` | 禁用核心分组；自动选核时排除这些逻辑 CPU |
+| `server.avoidSmt` | `true` 时每个物理核心只选择一个逻辑线程；不会关闭硬件超线程 |
+| `groups.main` | `/servercore list` 中的主核心分组；点击确认应用后在线绑定这些逻辑 CPU |
+| `groups.shared` | 共享核心分组，供后续线程调度接口使用；当前版本保留分组并显示，不改变其他线程 |
+| `groups.disabled` | 禁用核心分组；自动选核时排除这些逻辑 CPU |
 
 CPU 编号从 0 开始。Windows 编号为 `processor group * 64 + group 内编号`；Linux 为内核 CPU 编号。`cpus` 是逻辑线程，不是物理核序号，不要假定不同机器的大核都是偶数编号。
 
@@ -37,32 +48,44 @@ CPU 编号从 0 开始。Windows 编号为 `processor group * 64 + group 内编�
 
 在每个服务端自己的配置中设置不同的 `coreIndex`，例如：
 
-```properties
-# 服务端 A：第一个可用物理大核
-server.mode=auto
-server.coreIndex=0
+```json5
+{
+  "server": {
+    "mode": "auto", // First available physical P core / 第一个可用物理 P 核
+    "coreIndex": 0
+  }
+}
 ```
 
-```properties
-# 服务端 B：第二个可用物理大核
-server.mode=auto
-server.coreIndex=1
+```json5
+{
+  "server": {
+    "mode": "auto", // Second available physical P core / 第二个可用物理 P 核
+    "coreIndex": 1
+  }
+}
 ```
 
 这要求实例具有相同的初始 CPU 可用范围和拓扑；否则序号可能指向不同 CPU，建议使用 explicit。编号超出可用大核数量会记录错误并跳过绑定，不会悄悄改绑到小核。
 
 也可以直接指定：
 
-```properties
-# 服务端 A 的文件
-server.mode=explicit
-server.cpus=2
+```json5
+{
+  "server": {
+    "mode": "explicit", // Explicit selection / 指定核心
+    "cpus": [2]
+  }
+}
 ```
 
-```properties
-# 服务端 B 的文件
-server.mode=explicit
-server.cpus=4
+```json5
+{
+  "server": {
+    "mode": "explicit", // Explicit selection / 指定核心
+    "cpus": [4]
+  }
+}
 ```
 
 以上只是示例，请根据启动日志的 `physicalCore` 判断：两个逻辑 CPU 若共享同一 `physicalCore`，仍会争抢同一物理核资源。这种配置分配不会为 CPU 建立系统级独占锁；其他软件、未安装本模组的服务端，以及配置相同的实例仍然可能使用同一核心。默认 `auto` 使用全部大核，也不会自动协调不同实例。
@@ -82,7 +105,7 @@ server.cpus=4
 [未分配]:5P,6P
 ```
 
-每个核心后面都有 `[主核心]`、`[共享核心]`、`[禁用核心]`、`[未分配]` 可点击按钮。还提供 `[禁用全部 P 核]`、`[禁用全部 E 核]`、SMT 过滤和刷新按钮。修改分组需要权限等级 2；修改后点击 `[确认应用]`，主线程绑定会在线更新并写回 `big-core-affinity.properties`。命令行也可以使用 `/servercore assign <核心编号> <main|shared|disabled|unassigned>`、`/servercore disable-all <p|e>` 和 `/servercore smt <off|on>`。
+每个核心后面都有 `[主核心]`、`[共享核心]`、`[禁用核心]`、`[未分配]` 可点击按钮。还提供 `[禁用全部 P 核]`、`[禁用全部 E 核]`、SMT 过滤和刷新按钮。修改分组需要权限等级 2；修改后点击 `[确认应用]`，主线程绑定会在线更新并写回 `core-affinity.json5`。命令行也可以使用 `/servercore assign <核心编号> <main|shared|disabled|unassigned>`、`/servercore disable-all <p|e>` 和 `/servercore smt <off|on>`。
 
 ## 日志与验证
 

@@ -1,45 +1,94 @@
 package dev.bigcore;
 
+import java.io.IOException;
+import java.io.Reader;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
-import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.*;
 
+/** JSON5-backed configuration with migration from the original properties file. */
 public record AffinityConfig(Policy server, Policy client, CoreGroups groups, String language, boolean avoidSmt) {
+    private static final String FILE_NAME = "core-affinity.json5";
+    private static final String LEGACY_FILE_NAME = "big-core-affinity.properties";
+
     public AffinityConfig(Policy server, Policy client, CoreGroups groups, String language) {
         this(server, client, groups, language, false);
     }
-    public AffinityConfig(Policy server, Policy client) { this(server, client, new CoreGroups(), "auto"); }
+
+    public AffinityConfig(Policy server, Policy client) {
+        this(server, client, new CoreGroups(), "auto");
+    }
+
     public static final String DEFAULT = """
-            # Core Affinity - use /servercore list and Confirm apply for live changes.
-            # mode: auto | explicit | off
-            # cpus: OS logical CPU numbers, e.g. 2 or 2,4 or 2-5 (explicit only).
-            # Windows ID = processor group * 64 + group-local logical index.
-            # coreIndex: -1 = all detected P cores; 0,1,... = one physical P core (auto only).
-            # Unknown/homogeneous topology: auto does nothing. Use explicit if needed.
-            # language: auto | zh_cn | en_us. auto checks Carpet's setting, then the JVM system locale.
-            language=auto
-            server.mode=auto
-            server.cpus=
-            server.coreIndex=-1
-            server.avoidSmt=false
-            client.mode=auto
-            client.cpus=
-            client.coreIndex=-1
-            main.cpus=
-            shared.cpus=
-            disabled.cpus=
+            {
+              // Core Affinity / 核心亲和性绑定
+              "language": "auto", // Display language: auto, zh_cn, en_us / 显示语言：auto、zh_cn、en_us
+              "server": {
+                "mode": "auto", // Binding mode: auto, explicit, off / 绑定模式：auto、explicit、off
+                "cpus": [], // Logical CPU IDs for explicit mode / explicit 模式使用的逻辑 CPU 编号
+                "coreIndex": -1, // Auto P-core index; -1 means all P cores / 自动 P 核索引；-1 表示全部 P 核
+                "avoidSmt": false // Keep one logical thread per physical core / 每个物理核心只保留一个逻辑线程
+              },
+              "client": {
+                "mode": "auto", // Binding mode: auto, explicit, off / 绑定模式：auto、explicit、off
+                "cpus": [], // Logical CPU IDs for explicit mode / explicit 模式使用的逻辑 CPU 编号
+                "coreIndex": -1 // Auto P-core index; -1 means all P cores / 自动 P 核索引；-1 表示全部 P 核
+              },
+              "groups": {
+                "main": [], // Server main-thread group / 服务端主线程分组
+                "shared": [], // Reserved/shared group for future worker binding / 预留共享分组，供后续工作线程绑定
+                "disabled": [] // CPUs excluded from automatic selection / 从自动选择中排除的 CPU
+              }
+            }
             """;
+
     public static AffinityConfig load(Path directory) throws IOException {
         Files.createDirectories(directory);
-        Path file = directory.resolve("big-core-affinity.properties");
+        Path file = directory.resolve(FILE_NAME);
         if (!Files.exists(file)) {
-            try { Files.writeString(file, DEFAULT, StandardCharsets.UTF_8, StandardOpenOption.CREATE_NEW); }
-            catch (FileAlreadyExistsException ignored) { /* another instance created it */ }
+            Path legacy = directory.resolve(LEGACY_FILE_NAME);
+            AffinityConfig migrated = Files.exists(legacy) ? loadLegacy(legacy) : defaults();
+            write(directory, migrated);
+            return migrated;
         }
+        try {
+            return fromJson5(Json5.parse(Files.readString(file, StandardCharsets.UTF_8)));
+        } catch (RuntimeException e) {
+            throw new IllegalArgumentException("Invalid JSON5 configuration: " + file, e);
+        }
+    }
+
+    public static void saveGroups(Path directory, CoreGroups groups) throws IOException {
+        AffinityConfig current = load(directory);
+        write(directory, new AffinityConfig(current.server(), current.client(), groups,
+                current.language(), current.avoidSmt()));
+    }
+
+    public static void saveServerSettings(Path directory, CoreGroups groups, boolean avoidSmt) throws IOException {
+        AffinityConfig current = load(directory);
+        write(directory, new AffinityConfig(current.server(), current.client(), groups,
+                current.language(), avoidSmt));
+    }
+
+    public static void saveLanguage(Path directory, String language) throws IOException {
+        AffinityConfig current = load(directory);
+        write(directory, new AffinityConfig(current.server(), current.client(), current.groups(),
+                language, current.avoidSmt()));
+    }
+
+    private static AffinityConfig defaults() {
+        return new AffinityConfig(new Policy(Policy.Mode.AUTO, Set.of(), -1),
+                new Policy(Policy.Mode.AUTO, Set.of(), -1), new CoreGroups(), "auto", false);
+    }
+
+    private static AffinityConfig loadLegacy(Path file) throws IOException {
         Properties properties = new Properties();
-        try (Reader reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) { properties.load(reader); }
-        return new AffinityConfig(read(properties, "server"), read(properties, "client"),
+        try (Reader reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
+            properties.load(reader);
+        }
+        return new AffinityConfig(readLegacyPolicy(properties, "server"), readLegacyPolicy(properties, "client"),
                 new CoreGroups(CpuList.parse(properties.getProperty("main.cpus", "")),
                         CpuList.parse(properties.getProperty("shared.cpus", "")),
                         CpuList.parse(properties.getProperty("disabled.cpus", ""))),
@@ -47,39 +96,105 @@ public record AffinityConfig(Policy server, Policy client, CoreGroups groups, St
                 Boolean.parseBoolean(properties.getProperty("server.avoidSmt", "false")));
     }
 
-    public static void saveGroups(Path directory, CoreGroups groups) throws IOException {
-        saveServerSettings(directory, groups, load(directory).avoidSmt());
+    private static Policy readLegacyPolicy(Properties properties, String role) {
+        return new Policy(Policy.Mode.valueOf(properties.getProperty(role + ".mode", "auto")
+                        .trim().toUpperCase(Locale.ROOT)),
+                CpuList.parse(properties.getProperty(role + ".cpus", "")),
+                Integer.parseInt(properties.getProperty(role + ".coreIndex", "-1").trim()));
     }
 
-    public static void saveServerSettings(Path directory, CoreGroups groups, boolean avoidSmt) throws IOException {
-        Files.createDirectories(directory);
-        Path file = directory.resolve("big-core-affinity.properties");
-        if (!Files.exists(file)) Files.writeString(file, DEFAULT, StandardCharsets.UTF_8, StandardOpenOption.CREATE_NEW);
-        Properties properties = new Properties();
-        try (Reader reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) { properties.load(reader); }
-        properties.setProperty("main.cpus", groups.mainCsv());
-        properties.setProperty("shared.cpus", groups.sharedCsv());
-        properties.setProperty("disabled.cpus", groups.disabledCsv());
-        properties.setProperty("server.avoidSmt", Boolean.toString(avoidSmt));
-        try (Writer writer = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
-            properties.store(writer, "Core Affinity settings");
-        }
+    private static AffinityConfig fromJson5(Object value) {
+        Map<String, Object> root = object(value, "root");
+        Map<String, Object> server = object(root.getOrDefault("server", Map.of()), "server");
+        Map<String, Object> client = object(root.getOrDefault("client", Map.of()), "client");
+        Map<String, Object> groups = object(root.getOrDefault("groups", Map.of()), "groups");
+        return new AffinityConfig(readPolicy(server, "server"), readPolicy(client, "client"),
+                new CoreGroups(readCpus(groups.getOrDefault("main", List.of()), "groups.main"),
+                        readCpus(groups.getOrDefault("shared", List.of()), "groups.shared"),
+                        readCpus(groups.getOrDefault("disabled", List.of()), "groups.disabled")),
+                string(root.getOrDefault("language", "auto"), "language").trim().toLowerCase(Locale.ROOT),
+                bool(server.getOrDefault("avoidSmt", false), "server.avoidSmt"));
     }
 
-    public static void saveLanguage(Path directory, String language) throws IOException {
-        Files.createDirectories(directory);
-        Path file = directory.resolve("big-core-affinity.properties");
-        if (!Files.exists(file)) Files.writeString(file, DEFAULT, StandardCharsets.UTF_8, StandardOpenOption.CREATE_NEW);
-        Properties properties = new Properties();
-        try (Reader reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) { properties.load(reader); }
-        properties.setProperty("language", language);
-        try (Writer writer = Files.newBufferedWriter(file, StandardCharsets.ISO_8859_1)) {
-            properties.store(writer, "Core Affinity settings");
-        }
+    private static Policy readPolicy(Map<String, Object> values, String role) {
+        String modeText = string(values.getOrDefault("mode", "auto"), role + ".mode");
+        Set<Integer> cpus = readCpus(values.getOrDefault("cpus", List.of()), role + ".cpus");
+        int coreIndex = number(values.getOrDefault("coreIndex", -1), role + ".coreIndex").intValue();
+        return new Policy(Policy.Mode.valueOf(modeText.trim().toUpperCase(Locale.ROOT)), cpus, coreIndex);
     }
-    private static Policy read(Properties p, String role) {
-        return new Policy(Policy.Mode.valueOf(p.getProperty(role + ".mode", "auto").trim().toUpperCase(Locale.ROOT)),
-                CpuList.parse(p.getProperty(role + ".cpus", "")),
-                Integer.parseInt(p.getProperty(role + ".coreIndex", "-1").trim()));
+
+    private static Set<Integer> readCpus(Object value, String field) {
+        if (value instanceof String text) return CpuList.parse(text);
+        if (!(value instanceof List<?> list)) throw new IllegalArgumentException(field + " must be an array");
+        Set<Integer> result = new LinkedHashSet<>();
+        for (Object item : list) result.add(number(item, field).intValue());
+        return Set.copyOf(result);
+    }
+
+    private static Map<String, Object> object(Object value, String field) {
+        if (!(value instanceof Map<?, ?> map)) throw new IllegalArgumentException(field + " must be an object");
+        Map<String, Object> result = new LinkedHashMap<>();
+        map.forEach((key, item) -> result.put(String.valueOf(key), item));
+        return result;
+    }
+
+    private static Number number(Object value, String field) {
+        if (value instanceof Number number) return number;
+        if (value instanceof String text) {
+            try { return Integer.valueOf(text.trim()); }
+            catch (NumberFormatException ignored) { }
+        }
+        throw new IllegalArgumentException(field + " must be a number");
+    }
+
+    private static String string(Object value, String field) {
+        if (value instanceof String text) return text;
+        throw new IllegalArgumentException(field + " must be a string");
+    }
+
+    private static boolean bool(Object value, String field) {
+        if (value instanceof Boolean result) return result;
+        if (value instanceof String text) return Boolean.parseBoolean(text.trim());
+        throw new IllegalArgumentException(field + " must be true or false");
+    }
+
+    private static void write(Path directory, AffinityConfig config) throws IOException {
+        Files.createDirectories(directory);
+        Files.writeString(directory.resolve(FILE_NAME), render(config), StandardCharsets.UTF_8,
+                StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
+    }
+
+    private static String render(AffinityConfig config) {
+        Policy server = config.server();
+        Policy client = config.client();
+        return "{\n" +
+                "  // Core Affinity / 核心亲和性绑定\n" +
+                "  \"language\": \"" + escape(config.language()) + "\", // Display language: auto, zh_cn, en_us / 显示语言：auto、zh_cn、en_us\n" +
+                "  \"server\": {\n" +
+                "    \"mode\": \"" + server.mode().name().toLowerCase(Locale.ROOT) + "\", // Binding mode: auto, explicit, off / 绑定模式：auto、explicit、off\n" +
+                "    \"cpus\": " + array(server.cpus()) + ", // Logical CPU IDs for explicit mode / explicit 模式使用的逻辑 CPU 编号\n" +
+                "    \"coreIndex\": " + server.coreIndex() + ", // Auto P-core index; -1 means all P cores / 自动 P 核索引；-1 表示全部 P 核\n" +
+                "    \"avoidSmt\": " + config.avoidSmt() + " // Keep one logical thread per physical core / 每个物理核心只保留一个逻辑线程\n" +
+                "  },\n" +
+                "  \"client\": {\n" +
+                "    \"mode\": \"" + client.mode().name().toLowerCase(Locale.ROOT) + "\", // Binding mode: auto, explicit, off / 绑定模式：auto、explicit、off\n" +
+                "    \"cpus\": " + array(client.cpus()) + ", // Logical CPU IDs for explicit mode / explicit 模式使用的逻辑 CPU 编号\n" +
+                "    \"coreIndex\": " + client.coreIndex() + " // Auto P-core index; -1 means all P cores / 自动 P 核索引；-1 表示全部 P 核\n" +
+                "  },\n" +
+                "  \"groups\": {\n" +
+                "    \"main\": " + array(config.groups().main()) + ", // Server main-thread group / 服务端主线程分组\n" +
+                "    \"shared\": " + array(config.groups().shared()) + ", // Reserved/shared group for future worker binding / 预留共享分组，供后续工作线程绑定\n" +
+                "    \"disabled\": " + array(config.groups().disabled()) + " // CPUs excluded from automatic selection / 从自动选择中排除的 CPU\n" +
+                "  }\n" +
+                "}\n";
+    }
+
+    private static String array(Set<Integer> values) {
+        return values.stream().sorted().map(String::valueOf).reduce((a, b) -> a + ", " + b)
+                .map(value -> "[" + value + "]").orElse("[]");
+    }
+
+    private static String escape(String value) {
+        return value.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 }
