@@ -1,5 +1,7 @@
 # Core Affinity / 核心亲和性绑定
 
+[English](README.en_us.md)
+
 Minecraft **1.21.1 · Fabric · Java 21**。将独立服务端/单人世界服务端的 `Server thread`、客户端的游戏与渲染主线程绑定到大核，或指定的逻辑 CPU。通过原生线程亲和性限制调度位置；不修改整个 Java 进程的亲和性。
 
 ## 安装
@@ -10,23 +12,23 @@ Fabric mod id 为 `core_affinity`，显示名称为 `Core Affinity`。升级时�
 
 ```json5
 {
-  // Core Affinity / 核心亲和性绑定
-  "language": "auto", // Display language / 显示语言
+  // Core Affinity configuration / Core Affinity 配置文件
+  "language": "auto", // Chat language: auto follows config, Carpet, then system / 聊天语言：auto 依次跟随本模组、Carpet、系统语言
   "server": {
-    "mode": "auto", // auto, explicit, off / 自动、指定、关闭
-    "cpus": [], // Explicit logical CPU IDs / 指定模式的逻辑 CPU 编号
-    "coreIndex": -1, // -1 all P cores / -1 表示全部 P 核
-    "avoidSmt": false // One thread per physical core / 每个物理核心只保留一个逻辑线程
+    "mode": "auto", // Server main thread: auto=P cores, explicit=cpus, off=disabled / 服务端主线程：auto=大核，explicit=按 cpus，off=关闭
+    "cpus": [], // Logical CPU IDs used only by explicit mode / 仅 explicit 模式使用的逻辑 CPU 编号
+    "coreIndex": -1, // In auto mode: -1=all P cores, 0+=one physical P core / auto 模式：-1=全部 P 核，0+=指定一个物理 P 核
+    "avoidSmt": false // true keeps one logical thread per physical core; SMT hardware stays on / true=每个物理核保留一个逻辑线程；不关闭硬件超线程
   },
   "client": {
-    "mode": "auto", // auto, explicit, off / 自动、指定、关闭
-    "cpus": [], // Explicit logical CPU IDs / 指定模式的逻辑 CPU 编号
-    "coreIndex": -1 // -1 all P cores / -1 表示全部 P 核
+    "mode": "auto", // Client main thread: auto=P cores, explicit=cpus, off=disabled / 客户端主线程：auto=大核，explicit=按 cpus，off=关闭
+    "cpus": [], // Logical CPU IDs used only by explicit mode / 仅 explicit 模式使用的逻辑 CPU 编号
+    "coreIndex": -1 // In auto mode: -1=all P cores, 0+=one physical P core / auto 模式：-1=全部 P 核，0+=指定一个物理 P 核
   },
   "groups": {
-    "main": [], // Server main-thread group / 服务端主线程分组
-    "shared": [], // Reserved shared group / 预留共享分组
-    "disabled": [] // Excluded from auto selection / 从自动选核中排除
+    "main": [], // CPUs used by the server main thread after Confirm apply / 点击确认应用后供服务端主线程使用的 CPU
+    "shared": [], // Reserved for future worker-thread affinity; currently informational / 预留给后续工作线程绑核；当前仅记录和显示
+    "disabled": [] // CPUs rejected by automatic selection and group application / 自动选核和分组应用时排除的 CPU
   }
 }
 ```
