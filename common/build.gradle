@@ -1,0 +1,12 @@
+dependencies {
+    api 'net.java.dev.jna:jna:5.14.0'
+    implementation 'org.slf4j:slf4j-api:2.0.9'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testRuntimeOnly 'org.slf4j:slf4j-simple:2.0.9'
+}
+tasks.register('nativeSmoke', JavaExec) {
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'dev.bigcore.NativeSmoke'
+    dependsOn testClasses
+}
