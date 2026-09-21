@@ -2,14 +2,13 @@
 
 [English](README.en_us.md)
 
-Minecraft **1.21.1 · Fabric · Java 21**。将独立服务端/单人世界服务端的 `Server thread`、客户端游戏主线程绑定到大核，或指定的逻辑 CPU。通过原生线程亲和性限制调度位置；不修改整个 Java 进程的亲和性。
+本模组可以将独立服务端/单人世界服务端的 `Server thread`、客户端游戏主线程绑定到大核，或指定的逻辑 CPU。通过原生线程亲和性限制调度位置；不修改整个 Java 进程的亲和性。
 
-## 安装
+Fabric mod id 为 `core_affinity`，显示名称为 `Core Affinity`<br>
+加载器版本要求Fabric Loader 0.16.14+<br>
+前置 [JNA](https://github.com/java-native-access/jna)（已内嵌），JNA 的许可证和归属见仓库中的 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)。服务端可单独安装，玩家无需安装；要绑定客户端线程则在客户端也安装。
 
-Fabric mod id 为 `core_affinity`，显示名称为 `Core Affinity`。升级时先移除旧的 `big-core-affinity-fabric` JAR，避免两个 mod id 同时加载；旧的 `config/big-core-affinity.properties` 会自动迁移到 `config/core-affinity.json5`。然后把 `core-affinity-fabric-1.0.0+mc1.21.1.jar` 放进对应实例的 `mods` 目录。需要 Fabric Loader 0.16.14 或更高版本；不需要 Fabric API，也不需要另装 JNA（已内嵌）。JNA 的许可证和归属见仓库中的 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)。服务端可单独安装，玩家无需安装；要绑定客户端线程则在客户端也安装。
-
-首次启动生成 `config/core-affinity.json5`。配置项支持 JSON5 的行尾注释、双语说明和尾逗号；旧 properties 文件只在新文件不存在时迁移。默认服务端和客户端均为 `auto`：仅在可靠检测到不同性能等级时绑定到最高等级的全部可用逻辑 CPU；拓扑不明或同构处理器上保持原状，日志提示手动配置。
-
+首次启动生成 `config/core-affinity.json5`
 ```json5
 {
   // Core Affinity configuration / Core Affinity 配置文件
@@ -33,64 +32,11 @@ Fabric mod id 为 `core_affinity`，显示名称为 `Core Affinity`。升级时�
 }
 ```
 
-| 配置 | 作用 |
-| --- | --- |
-| `server.mode` / `client.mode` | `auto` 自动选大核；`explicit` 按 `cpus` 指定；`off` 关闭 |
-| `server.cpus` / `client.cpus` | 仅 explicit 使用；逻辑 CPU 编号，例如 `2`、`2,4`、`2-5` |
-| `server.coreIndex` / `client.coreIndex` | 仅 auto 使用；`-1` 使用全部大核；`0`、`1`…选择第几个可用物理大核上的一个逻辑线程 |
-| `language` | 指令语言；`auto` 先看本模组配置，其次尝试 Carpet 语言设置，最后使用系统语言；也可写 `zh_cn` 或 `en_us` |
-| `server.avoidSmt` | `true` 时每个物理核心只选择一个逻辑线程；不会关闭硬件超线程 |
-| `groups.main` | `/coreaffinity list` 中的主核心分组；点击确认应用后在线绑定这些逻辑 CPU |
-| `groups.shared` | 共享核心分组，供后续线程调度接口使用；当前版本保留分组并显示，不改变其他线程 |
-| `groups.disabled` | 禁用核心分组；自动选核时排除这些逻辑 CPU |
-
-CPU 编号从 0 开始。Windows 编号为 `processor group * 64 + group 内编号`；Linux 为内核 CPU 编号。`cpus` 是逻辑线程，不是物理核序号，不要假定不同机器的大核都是偶数编号。
-
-## 同机多个服务端分配不同大核
-
-在每个服务端自己的配置中设置不同的 `coreIndex`，例如：
-
-```json5
-{
-  "server": {
-    "mode": "auto", // First available physical P core / 第一个可用物理 P 核
-    "coreIndex": 0
-  }
-}
-```
-
-```json5
-{
-  "server": {
-    "mode": "auto", // Second available physical P core / 第二个可用物理 P 核
-    "coreIndex": 1
-  }
-}
-```
-
-这要求实例具有相同的初始 CPU 可用范围和拓扑；否则序号可能指向不同 CPU，建议使用 explicit。编号超出可用大核数量会记录错误并跳过绑定，不会悄悄改绑到小核。
-
-也可以直接指定：
-
-```json5
-{
-  "server": {
-    "mode": "explicit", // Explicit selection / 指定核心
-    "cpus": [2]
-  }
-}
-```
-
-```json5
-{
-  "server": {
-    "mode": "explicit", // Explicit selection / 指定核心
-    "cpus": [4]
-  }
-}
-```
-
-以上只是示例，请根据启动日志的 `physicalCore` 判断：两个逻辑 CPU 若共享同一 `physicalCore`，仍会争抢同一物理核资源。这种配置分配不会为 CPU 建立系统级独占锁；其他软件、未安装本模组的服务端，以及配置相同的实例仍然可能使用同一核心。默认 `auto` 使用全部大核，也不会自动协调不同实例。
+P为大核 E为小核心<br>
+CPU 编号从 0 开始<br>
+Windows 编号为 `processor group * 64 + group 内编号`<br>
+Linux 为内核 CPU 编号<br>
+`cpus` 是逻辑线程，不是物理核序号，不要假定不同机器的大核都是偶数编号
 
 ## 游戏内指令
 
@@ -110,7 +56,23 @@ CPU 编号从 0 开始。Windows 编号为 `processor group * 64 + group 内编�
 
 玩家执行 `/coreaffinity language zh_cn` 或 `/coreaffinity language en_us` 后，可以在聊天栏选择是否设为全服默认；不确认则只改变自己的显示。核心列表中的按钮修改待应用方案，权限等级 2 的玩家点击确认后才会在线更新绑定并保存配置。
 
-客户端安装 [Mod Menu](https://modrinth.com/mod/modmenu) 后，可以在模组列表中打开 Core Affinity 的完整配置页面，修改服务端、客户端、语言、SMT 和核心分组。保存后重启客户端，客户端主线程绑定才会更新；专用服务端配置仍应在服务端实例中修改。
+`/coreaffinity list` 的核心分组界面如下；按钮会根据当前状态显示为选中颜色，点击后只修改待应用方案：
+
+```text
+CPU核心分组 点击按键进行更改
+✓：主核心：游戏进程主要调用的核心
+✕：禁用核心：不调用的核心
+？：未分配核心：加载地图等多核行为会调用的核心
+P为大核心 E为小核心
+0P:[✓][✕][？]
+1P:[✓][✕][？]
+2E:[✓][✕][？]
+快捷操作
+[✓全部P核心][✓全部E核心]
+[✕全部P核心][✕全部E核心]
+[？全部P核心][？全部E核心]
+[应用更改]
+```
 
 ## 系统支持与边界
 
