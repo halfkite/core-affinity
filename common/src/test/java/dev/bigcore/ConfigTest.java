@@ -17,7 +17,7 @@ class ConfigTest {
         Path file = temp.resolve("core-affinity.json5");
         String text = Files.readString(file);
         assertEquals(Policy.Mode.AUTO, config.server().mode());
-        assertTrue(text.contains("\"server\"") && text.contains("// Binding mode") && text.contains("绑定模式"));
+        assertTrue(text.contains("\"server\"") && text.contains("// Server main thread") && text.contains("服务端主线程"));
     }
 
     @Test void readsJson5CommentsArraysAndTrailingCommas() throws Exception {

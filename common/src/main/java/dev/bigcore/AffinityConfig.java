@@ -23,23 +23,23 @@ public record AffinityConfig(Policy server, Policy client, CoreGroups groups, St
 
     public static final String DEFAULT = """
             {
-              // Core Affinity / 核心亲和性绑定
-              "language": "auto", // Display language: auto, zh_cn, en_us / 显示语言：auto、zh_cn、en_us
+              // Core Affinity configuration / Core Affinity 配置文件
+              "language": "auto", // Chat language: auto follows config, Carpet, then system / 聊天语言：auto 依次跟随本模组、Carpet、系统语言
               "server": {
-                "mode": "auto", // Binding mode: auto, explicit, off / 绑定模式：auto、explicit、off
-                "cpus": [], // Logical CPU IDs for explicit mode / explicit 模式使用的逻辑 CPU 编号
-                "coreIndex": -1, // Auto P-core index; -1 means all P cores / 自动 P 核索引；-1 表示全部 P 核
-                "avoidSmt": false // Keep one logical thread per physical core / 每个物理核心只保留一个逻辑线程
+                "mode": "auto", // Server main thread: auto=P cores, explicit=cpus, off=disabled / 服务端主线程：auto=大核，explicit=按 cpus，off=关闭
+                "cpus": [], // Logical CPU IDs used only by explicit mode / 仅 explicit 模式使用的逻辑 CPU 编号
+                "coreIndex": -1, // In auto mode: -1=all P cores, 0+=one physical P core / auto 模式：-1=全部 P 核，0+=指定一个物理 P 核
+                "avoidSmt": false // true keeps one logical thread per physical core; SMT hardware stays on / true=每个物理核保留一个逻辑线程；不关闭硬件超线程
               },
               "client": {
-                "mode": "auto", // Binding mode: auto, explicit, off / 绑定模式：auto、explicit、off
-                "cpus": [], // Logical CPU IDs for explicit mode / explicit 模式使用的逻辑 CPU 编号
-                "coreIndex": -1 // Auto P-core index; -1 means all P cores / 自动 P 核索引；-1 表示全部 P 核
+                "mode": "auto", // Client main thread: auto=P cores, explicit=cpus, off=disabled / 客户端主线程：auto=大核，explicit=按 cpus，off=关闭
+                "cpus": [], // Logical CPU IDs used only by explicit mode / 仅 explicit 模式使用的逻辑 CPU 编号
+                "coreIndex": -1 // In auto mode: -1=all P cores, 0+=one physical P core / auto 模式：-1=全部 P 核，0+=指定一个物理 P 核
               },
               "groups": {
-                "main": [], // Server main-thread group / 服务端主线程分组
-                "shared": [], // Reserved/shared group for future worker binding / 预留共享分组，供后续工作线程绑定
-                "disabled": [] // CPUs excluded from automatic selection / 从自动选择中排除的 CPU
+                "main": [], // CPUs used by the server main thread after Confirm apply / 点击确认应用后供服务端主线程使用的 CPU
+                "shared": [], // Reserved for future worker-thread affinity; currently informational / 预留给后续工作线程绑核；当前仅记录和显示
+                "disabled": [] // CPUs rejected by automatic selection and group application / 自动选核和分组应用时排除的 CPU
               }
             }
             """;
@@ -168,23 +168,23 @@ public record AffinityConfig(Policy server, Policy client, CoreGroups groups, St
         Policy server = config.server();
         Policy client = config.client();
         return "{\n" +
-                "  // Core Affinity / 核心亲和性绑定\n" +
-                "  \"language\": \"" + escape(config.language()) + "\", // Display language: auto, zh_cn, en_us / 显示语言：auto、zh_cn、en_us\n" +
+                "  // Core Affinity configuration / Core Affinity 配置文件\n" +
+                "  \"language\": \"" + escape(config.language()) + "\", // Chat language: auto follows config, Carpet, then system / 聊天语言：auto 依次跟随本模组、Carpet、系统语言\n" +
                 "  \"server\": {\n" +
-                "    \"mode\": \"" + server.mode().name().toLowerCase(Locale.ROOT) + "\", // Binding mode: auto, explicit, off / 绑定模式：auto、explicit、off\n" +
-                "    \"cpus\": " + array(server.cpus()) + ", // Logical CPU IDs for explicit mode / explicit 模式使用的逻辑 CPU 编号\n" +
-                "    \"coreIndex\": " + server.coreIndex() + ", // Auto P-core index; -1 means all P cores / 自动 P 核索引；-1 表示全部 P 核\n" +
-                "    \"avoidSmt\": " + config.avoidSmt() + " // Keep one logical thread per physical core / 每个物理核心只保留一个逻辑线程\n" +
+                "    \"mode\": \"" + server.mode().name().toLowerCase(Locale.ROOT) + "\", // Server main thread: auto=P cores, explicit=cpus, off=disabled / 服务端主线程：auto=大核，explicit=按 cpus，off=关闭\n" +
+                "    \"cpus\": " + array(server.cpus()) + ", // Logical CPU IDs used only by explicit mode / 仅 explicit 模式使用的逻辑 CPU 编号\n" +
+                "    \"coreIndex\": " + server.coreIndex() + ", // In auto mode: -1=all P cores, 0+=one physical P core / auto 模式：-1=全部 P 核，0+=指定一个物理 P 核\n" +
+                "    \"avoidSmt\": " + config.avoidSmt() + " // true keeps one logical thread per physical core; SMT hardware stays on / true=每个物理核保留一个逻辑线程；不关闭硬件超线程\n" +
                 "  },\n" +
                 "  \"client\": {\n" +
-                "    \"mode\": \"" + client.mode().name().toLowerCase(Locale.ROOT) + "\", // Binding mode: auto, explicit, off / 绑定模式：auto、explicit、off\n" +
-                "    \"cpus\": " + array(client.cpus()) + ", // Logical CPU IDs for explicit mode / explicit 模式使用的逻辑 CPU 编号\n" +
-                "    \"coreIndex\": " + client.coreIndex() + " // Auto P-core index; -1 means all P cores / 自动 P 核索引；-1 表示全部 P 核\n" +
+                "    \"mode\": \"" + client.mode().name().toLowerCase(Locale.ROOT) + "\", // Client main thread: auto=P cores, explicit=cpus, off=disabled / 客户端主线程：auto=大核，explicit=按 cpus，off=关闭\n" +
+                "    \"cpus\": " + array(client.cpus()) + ", // Logical CPU IDs used only by explicit mode / 仅 explicit 模式使用的逻辑 CPU 编号\n" +
+                "    \"coreIndex\": " + client.coreIndex() + " // In auto mode: -1=all P cores, 0+=one physical P core / auto 模式：-1=全部 P 核，0+=指定一个物理 P 核\n" +
                 "  },\n" +
                 "  \"groups\": {\n" +
-                "    \"main\": " + array(config.groups().main()) + ", // Server main-thread group / 服务端主线程分组\n" +
-                "    \"shared\": " + array(config.groups().shared()) + ", // Reserved/shared group for future worker binding / 预留共享分组，供后续工作线程绑定\n" +
-                "    \"disabled\": " + array(config.groups().disabled()) + " // CPUs excluded from automatic selection / 从自动选择中排除的 CPU\n" +
+                "    \"main\": " + array(config.groups().main()) + ", // CPUs used by the server main thread after Confirm apply / 点击确认应用后供服务端主线程使用的 CPU\n" +
+                "    \"shared\": " + array(config.groups().shared()) + ", // Reserved for future worker-thread affinity; currently informational / 预留给后续工作线程绑核；当前仅记录和显示\n" +
+                "    \"disabled\": " + array(config.groups().disabled()) + " // CPUs rejected by automatic selection and group application / 自动选核和分组应用时排除的 CPU\n" +
                 "  }\n" +
                 "}\n";
     }
