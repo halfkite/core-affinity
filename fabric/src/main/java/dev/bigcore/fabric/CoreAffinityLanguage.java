@@ -18,11 +18,11 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 /** Resource-backed command text and language selection. */
-final class ServerCoreLanguage {
+final class CoreAffinityLanguage {
     private static final String LANGUAGE_DIRECTORY = "assets/core_affinity/lang";
-    private static final Pattern LANGUAGE_FILE = Pattern.compile("servercore_([a-z0-9_]+)\\.properties");
+    private static final Pattern LANGUAGE_FILE = Pattern.compile("coreaffinity_([a-z0-9_]+)\\.properties");
     private static final Pattern CARPET_LANGUAGE = Pattern.compile("(?im)^\\s*(?:language|lang)\\s*[=: ]\\s*([a-z]{2}(?:[_-][a-z]{2})?)\\s*$");
-    private ServerCoreLanguage() { }
+    private CoreAffinityLanguage() { }
 
     static String resolve(AffinityConfig config, Path configDirectory) {
         String configured = normalize(config == null ? "auto" : config.language());
@@ -44,8 +44,8 @@ final class ServerCoreLanguage {
     static String value(String language, String key) {
         String selected = supportedOrEnglish(normalize(language));
         Properties properties = new Properties();
-        String resource = "/assets/core_affinity/lang/servercore_" + selected + ".properties";
-        try (InputStream stream = ServerCoreLanguage.class.getResourceAsStream(resource)) {
+        String resource = "/assets/core_affinity/lang/coreaffinity_" + selected + ".properties";
+        try (InputStream stream = CoreAffinityLanguage.class.getResourceAsStream(resource)) {
             if (stream == null) throw new IllegalStateException("Missing language resource " + resource);
             properties.load(new InputStreamReader(stream, StandardCharsets.UTF_8));
         } catch (Exception e) {

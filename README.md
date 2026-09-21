@@ -40,7 +40,7 @@ Fabric mod id 为 `core_affinity`，显示名称为 `Core Affinity`。升级时�
 | `server.coreIndex` / `client.coreIndex` | 仅 auto 使用；`-1` 使用全部大核；`0`、`1`…选择第几个可用物理大核上的一个逻辑线程 |
 | `language` | 指令语言；`auto` 先看本模组配置，其次尝试 Carpet 语言设置，最后使用系统语言；也可写 `zh_cn` 或 `en_us` |
 | `server.avoidSmt` | `true` 时每个物理核心只选择一个逻辑线程；不会关闭硬件超线程 |
-| `groups.main` | `/servercore list` 中的主核心分组；点击确认应用后在线绑定这些逻辑 CPU |
+| `groups.main` | `/coreaffinity list` 中的主核心分组；点击确认应用后在线绑定这些逻辑 CPU |
 | `groups.shared` | 共享核心分组，供后续线程调度接口使用；当前版本保留分组并显示，不改变其他线程 |
 | `groups.disabled` | 禁用核心分组；自动选核时排除这些逻辑 CPU |
 
@@ -94,31 +94,21 @@ CPU 编号从 0 开始。Windows 编号为 `processor group * 64 + group 内编�
 
 ## 游戏内指令
 
-服务端启动后使用 `/servercore help` 查看帮助。帮助正文来自模组资源文件，不写死在 Java 代码中；默认语言优先级为本模组配置 `language`，其次是 Carpet 的语言设置（安装 Carpet 时），最后是 Java/操作系统语言。使用 `/servercore language` 查看可用语言，使用 `/servercore language zh_cn` 或 `/servercore language en_us` 设置自己的显示语言；玩家设置后会在聊天栏询问是否设为全服默认，不确认则只改变自己的显示。语言参数支持自动补全，候选项来自模组实际语言文件。
-
-有权限的玩家可以点击确认按钮，等价于 `/servercore language global <语言>`，将语言写入全服默认配置；`/servercore language personal <语言>` 可明确保持为个人显示。控制台执行 `/servercore language <语言>` 时没有个人聊天显示，会直接设置全服默认。
-
-`/servercore list` 会列出操作系统可见的每个逻辑 CPU，每行标出 `P`/`E`，并显示当前分组：
+帮助中的白色命令可点击补全，灰色 `#` 后是简短说明。语言参数支持自动补全，候选项来自模组语言文件。
 
 ```text
-[主核心]:0P,1P
-[共享核心]:2P,3P
-[禁用核心]:14E,15E
-[未分配]:5P,6P
+/coreaffinity help #获取帮助
+/coreaffinity language <语言> #设置自己的显示语言
+/coreaffinity list #查看 CPU 核心分组
+/coreaffinity assign <核心编号> <分组> #修改核心分组
+/coreaffinity disable-all <p|e> #一键禁用 P 核或 E 核
+/coreaffinity language global <语言> #设置全服默认语言
+/coreaffinity language personal <语言> #仅设置自己的语言
+/coreaffinity smt <off|on> #设置主线程超线程过滤
+/coreaffinity apply <确认令牌> #确认应用待处理分组
 ```
 
-每个核心后面都有 `[主核心]`、`[共享核心]`、`[禁用核心]`、`[未分配]` 可点击按钮。还提供 `[禁用全部 P 核]`、`[禁用全部 E 核]`、SMT 过滤和刷新按钮。修改分组需要权限等级 2；修改后点击 `[确认应用]`，主线程绑定会在线更新并写回 `core-affinity.json5`。命令行也可以使用 `/servercore assign <核心编号> <main|shared|disabled|unassigned>`、`/servercore disable-all <p|e>` 和 `/servercore smt <off|on>`。
-
-## 日志与验证
-
-第一次 tick 时打印 CPU 拓扑及 `bound and verified`，后者表示原生设置后已成功读回亲和性。`allowed` 是模组初始化时的线程允许范围；`performanceClass` 是系统提供的相对性能等级；`physicalCore` 用于识别超线程兄弟。
-
-1. 启动服务端，等世界加载完成，检查 `logs/latest.log` 中的 `CoreAffinity` 与 `bound and verified`。
-2. 客户端进入世界后分别检查 `CLIENT` 和 `SERVER` 日志；多人游戏客户端只绑定 CLIENT。
-3. 两个服务端分别设 `coreIndex=0/1`，重启后确认输出不同的 `physical cores`。
-4. Windows 可以用能查看线程亲和性的工具检查 `Server thread`；任务管理器的进程亲和性不是本模组的线程亲和性。Linux 可对 `/proc/<pid>/task/<tid>/status` 查看 `Cpus_allowed_list`。
-
-配置错误、原生库加载失败、系统拒绝绑核时记录原因并继续运行 Minecraft。运行中不轮询、不持续重设亲和性；外部工具之后改变线程亲和性会覆盖本模组设置。停止线程时尝试恢复原范围。
+玩家执行 `/coreaffinity language zh_cn` 或 `/coreaffinity language en_us` 后，可以在聊天栏选择是否设为全服默认；不确认则只改变自己的显示。核心列表中的按钮修改待应用方案，权限等级 2 的玩家点击确认后才会在线更新绑定并保存配置。
 
 ## 系统支持与边界
 
@@ -128,25 +118,5 @@ CPU 编号从 0 开始。Windows 编号为 `processor group * 64 + group 内编�
 - 在首个 tick 才绑定，以便启动阶段已有工作线程不受影响。不过 **Linux 会让之后新建的线程继承创建者的亲和性**；本模组没有拦截其他模组的线程创建。公共服务在绑核前保留原始允许范围，让之后创建的单人世界服务端仍能独立选核。Linux 对工作线程特别敏感的整合包应实测吞吐量。
 - 单核固定可减少迁移，也可能限制调度弹性；不保证提高 FPS/TPS。默认全部大核更适合先验证，再按需给多实例分核。
 - 自动识别依赖操作系统/固件正确报告；识别失败请查日志并手动配置。
-
-## 项目结构与 NeoForge 接口
-
-```
-common/  不依赖 Minecraft 或 Fabric 的配置、选核策略和 Windows/Linux 原生实现
-fabric/  Fabric 初始化及两个主线程的 Mixin 接入
-```
-
-以后 NeoForge 适配模块可复用 `common`，在任何绑核之前于初始化阶段调用 `AffinityService.load(configDirectory)`，然后在真正的服务端/客户端主线程首个 tick 调用 `bindCurrentThread(Role.SERVER/CLIENT)`；停止时在同一线程调用 `restoreCurrentThread()`。适配层负责每个线程生命周期只尝试一次。`AffinityBackend` 是操作系统扩展接口。此版不包含 NeoForge 成品，也没有迁移其他 Minecraft 版本。
-
-## 构建和验证
-
-```powershell
-$env:JAVA_HOME='你的 JDK 21 路径'
-.\gradlew.bat build :common:nativeSmoke
-```
-
-输出：`fabric/build/libs/core-affinity-fabric-1.0.0+mc1.21.1.jar`。`-sources.jar` 不用于安装。Gradle Wrapper 固定 9.5.1，首次构建需要下载依赖。`common:test` 验证选核与配置；`common:nativeSmoke` 只在独立测试 JVM 中实际绑定、读回、恢复，并检查已有旁路线程未受影响。
-
-构建归档保存在 `mod-builds/时间戳/`，含可安装 jar 和 SHA-256 清单。测试记录见 `TESTING.md`。
 
 实现依据：[Microsoft CPU set 字段定义](https://learn.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-system_cpu_set_information)、[Windows 线程分组亲和性](https://learn.microsoft.com/en-us/windows/win32/api/processtopologyapi/nf-processtopologyapi-setthreadgroupaffinity)、[Linux Intel 混合 PMU 源码](https://github.com/torvalds/linux/blob/master/arch/x86/events/intel/core.c)。

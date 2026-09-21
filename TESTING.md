@@ -43,20 +43,20 @@ Carpet 文件是 `fabric-carpet-1.21-1.4.147+v240613.jar`，兼容 Minecraft 1.2
 
 这轮测试只验证了绑核、Carpet 假人移动、区块加载和 CPU 观测，没有把三个服务端长期保留运行；脚本在采样结束后发送 `stop` 并等待保存完成。旧的 Java 25 轮次仍保留在 `multi-server-20260921-142934`，用于对比，但结论以 JDK 21 轮次为准。
 
-## `/servercore` 指令冒烟测试（2026-09-21）
+## `/coreaffinity` 指令冒烟测试（2026-09-21）
 
 使用当前构建的 JAR 更新已有 Fabric 服务端实例（复用原来的 server.jar、世界、库和 Carpet），配置 `language=zh_cn`，依次执行：
 
 ```text
-/servercore help
-/servercore language en_us
-/servercore language
-/servercore list
-/servercore assign 0 main
-/servercore disable-all e
+/coreaffinity help
+/coreaffinity language en_us
+/coreaffinity language
+/coreaffinity list
+/coreaffinity assign 0 main
+/coreaffinity disable-all e
 ```
 
-结果：中文帮助、英文帮助、动态语言菜单、CPU 列表、P/E 标注、核心分组命令和一键禁用 E 核均成功。帮助日志显示指令与灰色说明分开输出；指令使用可点击补全事件。列表行实际输出为 `0P  [main] ...`、`10P [main] ...`，核心标签固定宽度；按钮状态由当前分组决定，默认灰色、选中蓝色。服务端随后正常执行 `stop`，退出码为 0。冒烟脚本为 [servercore-command-smoke.ps1](D:/ai/dxh/test-runs/servercore-command-smoke.ps1)。
+结果：中文帮助、英文帮助、动态语言菜单、CPU 列表、P/E 标注、核心分组命令和一键禁用 E 核均成功。帮助日志显示指令与灰色说明分开输出；指令使用可点击补全事件。列表行实际输出为 `0P  [main] ...`、`10P [main] ...`，核心标签固定宽度；按钮状态由当前分组决定，默认灰色、选中蓝色。服务端随后正常执行 `stop`，退出码为 0。冒烟脚本为 [coreaffinity-command-smoke.ps1](D:/ai/dxh/test-runs/coreaffinity-command-smoke.ps1)。
 
 ## 核心分组与 P/E 对比测试（2026-09-21）
 
@@ -68,8 +68,8 @@ Carpet 文件是 `fabric-carpet-1.21-1.4.147+v240613.jar`，兼容 Minecraft 1.2
 
 ## Confirming live affinity changes (2026-09-21 19:33)
 
-SMT filtering update: `/servercore smt off` stages one selected logical thread per physical core; `/servercore smt on` stages removal of that filter. Both require Confirm apply and persist as `server.avoidSmt`. Explicit groups are retained so removing the filter restores their sibling selections. Unit tests cover non-adjacent siblings, persistence and startup behavior. Windows native smoke verified a 20-CPU selection reduced to 14 physical-core representatives and restored to 20. This only filters server main-thread affinity; it does not disable hardware SMT, restrict workers or reserve cores across servers. Linux and actual player clicks remain untested.
+SMT filtering update: `/coreaffinity smt off` stages one selected logical thread per physical core; `/coreaffinity smt on` stages removal of that filter. Both require Confirm apply and persist as `server.avoidSmt`. Explicit groups are retained so removing the filter restores their sibling selections. Unit tests cover non-adjacent siblings, persistence and startup behavior. Windows native smoke verified a 20-CPU selection reduced to 14 physical-core representatives and restored to 20. This only filters server main-thread affinity; it does not disable hardware SMT, restrict workers or reserve cores across servers. Linux and actual player clicks remain untested.
 
-On Fabric 1.21.1, core assignment and disable-all buttons now edit a server-wide, in-memory draft. `/servercore list` shows the draft and a localized Confirm apply button. Only this permission-level-2 confirmation changes the server main-thread affinity and persists the groups. Each edit invalidates previous confirmation buttons. Unconfirmed drafts are lost on server shutdown. Language settings continue to apply immediately. Shared groups still do not constrain worker threads.
+On Fabric 1.21.1, core assignment and disable-all buttons now edit a server-wide, in-memory draft. `/coreaffinity list` shows the draft and a localized Confirm apply button. Only this permission-level-2 confirmation changes the server main-thread affinity and persists the groups. Each edit invalidates previous confirmation buttons. Unconfirmed drafts are lost on server shutdown. Language settings continue to apply immediately. Shared groups still do not constrain worker threads.
 
 Validation: `gradlew.bat build :common:nativeSmoke --console plain` passed. Transaction tests cover native failure, persistence failure rollback, repeated changes and restoration of the original affinity. Windows native smoke verified CPU 0 -> 19 -> 0 with readback. The existing installed Fabric/Carpet command-smoke server was reused with the updated JAR; draft editing and stale confirmation were checked. Actual player clicks and visual chat rendering were not tested.

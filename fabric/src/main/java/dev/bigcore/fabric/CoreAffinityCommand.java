@@ -21,29 +21,29 @@ import java.util.concurrent.ConcurrentHashMap;
 import static net.minecraft.server.command.CommandManager.argument;
 import static net.minecraft.server.command.CommandManager.literal;
 
-public final class ServerCoreCommand {
+public final class CoreAffinityCommand {
     private static final Map<UUID, String> PLAYER_LANGUAGES = new ConcurrentHashMap<>();
     private record Draft(CoreGroups groups, boolean avoidSmt, String token) { }
     private static final Map<net.minecraft.server.MinecraftServer, Draft> DRAFTS = new WeakHashMap<>();
-    private ServerCoreCommand() { }
+    private CoreAffinityCommand() { }
 
     public static void register(CommandDispatcher<ServerCommandSource> dispatcher, Path configDirectory) {
-        dispatcher.register(literal("servercore")
+        dispatcher.register(literal("coreaffinity")
                 .then(literal("help")
                         .executes(context -> help(context, configDirectory)))
                 .then(literal("language")
                         .executes(context -> languageMenu(context, configDirectory))
                         .then(argument("language", StringArgumentType.word())
-                                .suggests(ServerCoreCommand::suggestLanguages)
+                                .suggests(CoreAffinityCommand::suggestLanguages)
                                 .executes(context -> setPersonalLanguage(context, configDirectory)))
                         .then(literal("global")
                                 .requires(source -> source.hasPermissionLevel(2))
                                 .then(argument("language", StringArgumentType.word())
-                                        .suggests(ServerCoreCommand::suggestLanguages)
+                                        .suggests(CoreAffinityCommand::suggestLanguages)
                                         .executes(context -> setGlobalLanguage(context, configDirectory))))
                         .then(literal("personal")
                                 .then(argument("language", StringArgumentType.word())
-                                        .suggests(ServerCoreCommand::suggestLanguages)
+                                        .suggests(CoreAffinityCommand::suggestLanguages)
                                         .executes(context -> setPersonalOnly(context, configDirectory)))))
                 .then(literal("list")
                         .executes(context -> list(context, configDirectory)))
@@ -72,9 +72,9 @@ public final class ServerCoreCommand {
 
     private static int setPersonalLanguage(CommandContext<ServerCommandSource> context, Path directory) {
         String requested = StringArgumentType.getString(context, "language");
-        String selected = ServerCoreLanguage.normalize(requested);
-        if (!ServerCoreLanguage.isSupported(selected)) {
-            context.getSource().sendError(ServerCoreLanguage.text(language(context.getSource(), directory), "message.unknown_language", requested));
+        String selected = CoreAffinityLanguage.normalize(requested);
+        if (!CoreAffinityLanguage.isSupported(selected)) {
+            context.getSource().sendError(CoreAffinityLanguage.text(language(context.getSource(), directory), "message.unknown_language", requested));
             return 0;
         }
         selected = canonicalLanguage(selected);
@@ -88,14 +88,14 @@ public final class ServerCoreCommand {
     private static int languageMenu(CommandContext<ServerCommandSource> context, Path directory) {
         ServerCommandSource source = context.getSource();
         String language = language(source, directory);
-        feedback(context.getSource(), ServerCoreLanguage.text(language, "language.title").formatted(Formatting.GOLD));
-        feedback(source, ServerCoreLanguage.text(language, "language.current", languageLabel(language)));
+        feedback(context.getSource(), CoreAffinityLanguage.text(language, "language.title").formatted(Formatting.GOLD));
+        feedback(source, CoreAffinityLanguage.text(language, "language.current", languageLabel(language)));
         feedback(source, languageButtons(language));
         return 1;
     }
 
     private static int showHelp(ServerCommandSource source, String language) {
-        feedback(source, ServerCoreLanguage.text(language, "help.title").formatted(Formatting.GOLD));
+        feedback(source, CoreAffinityLanguage.text(language, "help.title").formatted(Formatting.GOLD));
         for (int i = 1; i <= 9; i++) {
             Text line = helpLine(language, i);
             if (line != null) feedback(source, line);
@@ -106,28 +106,28 @@ public final class ServerCoreCommand {
 
     private static Text helpLine(String language, int number) {
         String prefix = "help.line." + number;
-        String command = ServerCoreLanguage.value(language, prefix + ".command");
-        String description = ServerCoreLanguage.value(language, prefix + ".description");
+        String command = CoreAffinityLanguage.value(language, prefix + ".command");
+        String description = CoreAffinityLanguage.value(language, prefix + ".description");
         if (!command.equals(prefix + ".command") && !description.equals(prefix + ".description")) {
-            String suggestion = ServerCoreLanguage.value(language, prefix + ".suggest");
+            String suggestion = CoreAffinityLanguage.value(language, prefix + ".suggest");
             if (suggestion.equals(prefix + ".suggest")) suggestion = command;
             String finalSuggestion = suggestion;
             return Text.literal(command).formatted(Formatting.WHITE)
                     .styled(style -> style.withClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, finalSuggestion)))
-                    .append(Text.literal(" - ").formatted(Formatting.GRAY))
+                    .append(Text.literal(" # ").formatted(Formatting.GRAY))
                     .append(Text.literal(description).formatted(Formatting.GRAY));
         }
-        String fallback = ServerCoreLanguage.value(language, prefix);
+        String fallback = CoreAffinityLanguage.value(language, prefix);
         return fallback.equals(prefix) ? null : Text.literal(fallback).formatted(Formatting.GRAY);
     }
 
     private static Text languageButtons(String language) {
-        Text result = Text.literal(ServerCoreLanguage.value(language, "language.available") + " ");
+        Text result = Text.literal(CoreAffinityLanguage.value(language, "language.available") + " ");
         boolean first = true;
-        for (String id : ServerCoreLanguage.supportedLanguages()) {
+        for (String id : CoreAffinityLanguage.supportedLanguages()) {
             if (!first) result = result.copy().append(Text.literal(" "));
-            result = result.copy().append(button(ServerCoreLanguage.value(language, "language." + id),
-                    "/servercore language " + id, Formatting.YELLOW));
+            result = result.copy().append(button(CoreAffinityLanguage.value(language, "language." + id),
+                    "/coreaffinity language " + id, Formatting.YELLOW));
             first = false;
         }
         return result;
@@ -135,27 +135,27 @@ public final class ServerCoreCommand {
 
     private static int setPersonalOnly(CommandContext<ServerCommandSource> context, Path directory) {
         String requested = StringArgumentType.getString(context, "language");
-        String selected = ServerCoreLanguage.normalize(requested);
-        if (!ServerCoreLanguage.isSupported(selected)) {
-            context.getSource().sendError(ServerCoreLanguage.text(language(context.getSource(), directory), "message.unknown_language", requested));
+        String selected = CoreAffinityLanguage.normalize(requested);
+        if (!CoreAffinityLanguage.isSupported(selected)) {
+            context.getSource().sendError(CoreAffinityLanguage.text(language(context.getSource(), directory), "message.unknown_language", requested));
             return 0;
         }
         ServerPlayerEntity player = context.getSource().getPlayer();
         if (player == null) {
-            context.getSource().sendError(ServerCoreLanguage.text(language(context.getSource(), directory), "message.players_only"));
+            context.getSource().sendError(CoreAffinityLanguage.text(language(context.getSource(), directory), "message.players_only"));
             return 0;
         }
         selected = canonicalLanguage(selected);
         PLAYER_LANGUAGES.put(player.getUuid(), selected);
-        feedback(context.getSource(), ServerCoreLanguage.text(selected, "language.personal_set", languageLabel(selected)));
+        feedback(context.getSource(), CoreAffinityLanguage.text(selected, "language.personal_set", languageLabel(selected)));
         return 1;
     }
 
     private static int setGlobalLanguage(CommandContext<ServerCommandSource> context, Path directory) {
         String requested = StringArgumentType.getString(context, "language");
-        String selected = ServerCoreLanguage.normalize(requested);
-        if (!ServerCoreLanguage.isSupported(selected)) {
-            context.getSource().sendError(ServerCoreLanguage.text(language(context.getSource(), directory), "message.unknown_language", requested));
+        String selected = CoreAffinityLanguage.normalize(requested);
+        if (!CoreAffinityLanguage.isSupported(selected)) {
+            context.getSource().sendError(CoreAffinityLanguage.text(language(context.getSource(), directory), "message.unknown_language", requested));
             return 0;
         }
         return setGlobalLanguageValue(context.getSource(), directory, canonicalLanguage(selected));
@@ -166,35 +166,35 @@ public final class ServerCoreCommand {
             AffinityConfig.saveLanguage(directory, selected);
             ServerPlayerEntity player = source.getPlayer();
             if (player != null) PLAYER_LANGUAGES.put(player.getUuid(), selected);
-            feedback(source, ServerCoreLanguage.text(selected, "language.global_set", languageLabel(selected)));
+            feedback(source, CoreAffinityLanguage.text(selected, "language.global_set", languageLabel(selected)));
             return 1;
         } catch (Exception e) {
-            source.sendError(ServerCoreLanguage.text(language(source, directory), "message.command_error", e.getMessage()));
+            source.sendError(CoreAffinityLanguage.text(language(source, directory), "message.command_error", e.getMessage()));
             return 0;
         }
     }
 
     private static void sendPersonalLanguagePrompt(ServerCommandSource source, String selected) {
-        feedback(source, ServerCoreLanguage.text(selected, "language.personal_set", languageLabel(selected)));
-        Text prompt = ServerCoreLanguage.text(selected, "language.default_prompt", languageLabel(selected));
+        feedback(source, CoreAffinityLanguage.text(selected, "language.personal_set", languageLabel(selected)));
+        Text prompt = CoreAffinityLanguage.text(selected, "language.default_prompt", languageLabel(selected));
         if (source.hasPermissionLevel(2)) {
             prompt = prompt.copy()
                     .append(Text.literal(" "))
-                    .append(button(ServerCoreLanguage.value(selected, "language.default_button"),
-                            "/servercore language global " + selected, Formatting.GOLD));
+                    .append(button(CoreAffinityLanguage.value(selected, "language.default_button"),
+                            "/coreaffinity language global " + selected, Formatting.GOLD));
         } else {
             prompt = prompt.copy().append(Text.literal(" "))
-                    .append(ServerCoreLanguage.text(selected, "language.default_permission"));
+                    .append(CoreAffinityLanguage.text(selected, "language.default_permission"));
         }
         prompt = prompt.copy().append(Text.literal(" "))
-                .append(button(ServerCoreLanguage.value(selected, "language.personal_button"),
-                        "/servercore language personal " + selected, Formatting.GRAY));
+                .append(button(CoreAffinityLanguage.value(selected, "language.personal_button"),
+                        "/coreaffinity language personal " + selected, Formatting.GRAY));
         feedback(source, prompt);
     }
 
     private static java.util.concurrent.CompletableFuture<com.mojang.brigadier.suggestion.Suggestions> suggestLanguages(
             CommandContext<ServerCommandSource> context, com.mojang.brigadier.suggestion.SuggestionsBuilder builder) {
-        for (String id : ServerCoreLanguage.supportedLanguages()) builder.suggest(id);
+        for (String id : CoreAffinityLanguage.supportedLanguages()) builder.suggest(id);
         return builder.buildFuture();
     }
 
@@ -205,7 +205,7 @@ public final class ServerCoreCommand {
     }
 
     private static String languageLabel(String language) {
-        return ServerCoreLanguage.value(language, "language." + language);
+        return CoreAffinityLanguage.value(language, "language." + language);
     }
 
     private static int list(CommandContext<ServerCommandSource> context, Path directory) {
@@ -216,11 +216,11 @@ public final class ServerCoreCommand {
             AffinityConfig config = AffinityConfig.load(directory);
             String language = language(source, directory, config);
             if (topology.isEmpty()) {
-                source.sendError(ServerCoreLanguage.text(language, "message.no_topology"));
+                source.sendError(CoreAffinityLanguage.text(language, "message.no_topology"));
                 return 0;
             }
             CoreGroups groups = draftGroups(source, config);
-            feedback(source, ServerCoreLanguage.text(language, "list.title").formatted(Formatting.GOLD));
+            feedback(source, CoreAffinityLanguage.text(language, "list.title").formatted(Formatting.GOLD));
             feedback(source, groupSummary(language, "main", groups.main(), topology, Formatting.GREEN));
             feedback(source, groupSummary(language, "shared", groups.shared(), topology, Formatting.AQUA));
             feedback(source, groupSummary(language, "disabled", groups.disabled(), topology, Formatting.RED));
@@ -228,50 +228,50 @@ public final class ServerCoreCommand {
             assigned.addAll(groups.shared());
             assigned.addAll(groups.disabled());
             List<Cpu> unassigned = topology.stream().filter(cpu -> !assigned.contains(cpu.id())).toList();
-            feedback(source, Text.literal(ServerCoreLanguage.value(language, "group.unassigned") + ": ").formatted(Formatting.GRAY)
+            feedback(source, Text.literal(CoreAffinityLanguage.value(language, "group.unassigned") + ": ").formatted(Formatting.GRAY)
                     .append(unassigned.stream().sorted(Comparator.comparingInt(Cpu::id)).map(cpu -> coreName(cpu, topology))
                             .reduce((a, b) -> a + "," + b).map(Text::literal).orElse(Text.literal(""))));
             for (Cpu cpu : topology.stream().sorted(Comparator.comparingInt(Cpu::id)).toList()) {
                 CoreGroups.Group current = groups.groupOf(cpu.id());
                 Text row = Text.literal(String.format(Locale.ROOT, "%-4s", coreName(cpu, topology)))
-                        .append(button(ServerCoreLanguage.value(language, "button.main"), "/servercore assign " + cpu.id() + " main",
+                        .append(button(CoreAffinityLanguage.value(language, "button.main"), "/coreaffinity assign " + cpu.id() + " main",
                                 current == CoreGroups.Group.MAIN ? Formatting.BLUE : Formatting.GRAY))
                         .append(Text.literal(" "))
-                        .append(button(ServerCoreLanguage.value(language, "button.shared"), "/servercore assign " + cpu.id() + " shared",
+                        .append(button(CoreAffinityLanguage.value(language, "button.shared"), "/coreaffinity assign " + cpu.id() + " shared",
                                 current == CoreGroups.Group.SHARED ? Formatting.BLUE : Formatting.GRAY))
                         .append(Text.literal(" "))
-                        .append(button(ServerCoreLanguage.value(language, "button.disabled"), "/servercore assign " + cpu.id() + " disabled",
+                        .append(button(CoreAffinityLanguage.value(language, "button.disabled"), "/coreaffinity assign " + cpu.id() + " disabled",
                                 current == CoreGroups.Group.DISABLED ? Formatting.BLUE : Formatting.GRAY))
                         .append(Text.literal(" "))
-                        .append(button(ServerCoreLanguage.value(language, "button.unassigned"), "/servercore assign " + cpu.id() + " unassigned",
+                        .append(button(CoreAffinityLanguage.value(language, "button.unassigned"), "/coreaffinity assign " + cpu.id() + " unassigned",
                                 current == CoreGroups.Group.UNASSIGNED ? Formatting.BLUE : Formatting.GRAY));
                 feedback(source, row);
             }
-            Text actions = Text.literal(ServerCoreLanguage.value(language, "list.actions") + " ")
-                    .append(button(ServerCoreLanguage.value(language, "button.disable_p"), "/servercore disable-all p", Formatting.RED))
+            Text actions = Text.literal(CoreAffinityLanguage.value(language, "list.actions") + " ")
+                    .append(button(CoreAffinityLanguage.value(language, "button.disable_p"), "/coreaffinity disable-all p", Formatting.RED))
                     .append(Text.literal(" "))
-                    .append(button(ServerCoreLanguage.value(language, "button.disable_e"), "/servercore disable-all e", Formatting.RED))
+                    .append(button(CoreAffinityLanguage.value(language, "button.disable_e"), "/coreaffinity disable-all e", Formatting.RED))
                     .append(Text.literal(" "))
-                    .append(button(ServerCoreLanguage.value(language, "button.refresh"), "/servercore list", Formatting.YELLOW));
+                    .append(button(CoreAffinityLanguage.value(language, "button.refresh"), "/coreaffinity list", Formatting.YELLOW));
             feedback(source, actions);
-            feedback(source, ServerCoreLanguage.text(language, "smt.status",
-                    ServerCoreLanguage.value(language, draftAvoidSmt(source, config) ? "smt.off" : "smt.on"))
+            feedback(source, CoreAffinityLanguage.text(language, "smt.status",
+                    CoreAffinityLanguage.value(language, draftAvoidSmt(source, config) ? "smt.off" : "smt.on"))
                     .append(Text.literal(" "))
-                    .append(button(ServerCoreLanguage.value(language, "smt.disable"), "/servercore smt off",
+                    .append(button(CoreAffinityLanguage.value(language, "smt.disable"), "/coreaffinity smt off",
                             draftAvoidSmt(source, config) ? Formatting.BLUE : Formatting.GRAY))
                     .append(Text.literal(" "))
-                    .append(button(ServerCoreLanguage.value(language, "smt.enable"), "/servercore smt on",
+                    .append(button(CoreAffinityLanguage.value(language, "smt.enable"), "/coreaffinity smt on",
                             draftAvoidSmt(source, config) ? Formatting.GRAY : Formatting.BLUE)));
-            feedback(source, ServerCoreLanguage.text(language, "smt.scope").formatted(Formatting.GRAY));
+            feedback(source, CoreAffinityLanguage.text(language, "smt.scope").formatted(Formatting.GRAY));
             Draft draft = DRAFTS.get(source.getServer());
             if (draft != null) {
-                feedback(source, ServerCoreLanguage.text(language, "message.pending").formatted(Formatting.YELLOW));
-                if (source.hasPermissionLevel(2)) feedback(source, button(ServerCoreLanguage.value(language, "button.apply"),
-                        "/servercore apply " + draft.token(), Formatting.GREEN));
+                feedback(source, CoreAffinityLanguage.text(language, "message.pending").formatted(Formatting.YELLOW));
+                if (source.hasPermissionLevel(2)) feedback(source, button(CoreAffinityLanguage.value(language, "button.apply"),
+                        "/coreaffinity apply " + draft.token(), Formatting.GREEN));
             }
             return 1;
         } catch (Exception e) {
-            source.sendError(ServerCoreLanguage.text(language(source, directory), "message.config_error", e.getMessage()));
+            source.sendError(CoreAffinityLanguage.text(language(source, directory), "message.config_error", e.getMessage()));
             return 0;
         }
     }
@@ -285,24 +285,24 @@ public final class ServerCoreCommand {
         try {
             group = CoreGroups.Group.parse(groupArgument);
         } catch (IllegalArgumentException ignored) {
-            source.sendError(ServerCoreLanguage.text(language, "message.group_error", groupArgument));
+            source.sendError(CoreAffinityLanguage.text(language, "message.group_error", groupArgument));
             return 0;
         }
         try {
             AffinityConfig config = AffinityConfig.load(directory);
             if (draftGroups(source, config).groupOf(cpu) == group) return list(context, directory);
             if (BigCoreFabric.service == null || BigCoreFabric.service.topology().stream().noneMatch(c -> c.id() == cpu)) {
-                source.sendError(ServerCoreLanguage.text(language, "message.cpu_missing", cpu));
+                source.sendError(CoreAffinityLanguage.text(language, "message.cpu_missing", cpu));
                 return 0;
             }
             CoreGroups next = draftGroups(source, config).assign(cpu, group);
             DRAFTS.put(source.getServer(), new Draft(next, draftAvoidSmt(source, config), UUID.randomUUID().toString()));
-            feedback(source, ServerCoreLanguage.text(language, "message.assigned", cpu,
-                    ServerCoreLanguage.value(language, "group." + group.name().toLowerCase(Locale.ROOT)))
+            feedback(source, CoreAffinityLanguage.text(language, "message.assigned", cpu,
+                    CoreAffinityLanguage.value(language, "group." + group.name().toLowerCase(Locale.ROOT)))
                     .formatted(Formatting.GREEN));
             return list(context, directory);
         } catch (Exception e) {
-            source.sendError(ServerCoreLanguage.text(language, "message.command_error", e.getMessage()));
+            source.sendError(CoreAffinityLanguage.text(language, "message.command_error", e.getMessage()));
             return 0;
         }
     }
@@ -311,22 +311,22 @@ public final class ServerCoreCommand {
         String language = language(context.getSource(), directory);
         String type = StringArgumentType.getString(context, "type").toLowerCase(Locale.ROOT);
         if (!type.equals("p") && !type.equals("e")) {
-            context.getSource().sendError(ServerCoreLanguage.text(language, "message.type_error"));
+            context.getSource().sendError(CoreAffinityLanguage.text(language, "message.type_error"));
             return 0;
         }
         try {
             if (BigCoreFabric.service == null || BigCoreFabric.service.topology().isEmpty()) {
-                context.getSource().sendError(ServerCoreLanguage.text(language, "message.no_topology"));
+                context.getSource().sendError(CoreAffinityLanguage.text(language, "message.no_topology"));
                 return 0;
             }
             AffinityConfig config = AffinityConfig.load(directory);
             CoreGroups next = draftGroups(context.getSource(), config).disableMatching(BigCoreFabric.service.topology(), type.equals("p"));
             DRAFTS.put(context.getSource().getServer(), new Draft(next, draftAvoidSmt(context.getSource(), config), UUID.randomUUID().toString()));
-            feedback(context.getSource(), ServerCoreLanguage.text(language, "message.disabled_all", type.toUpperCase(Locale.ROOT))
+            feedback(context.getSource(), CoreAffinityLanguage.text(language, "message.disabled_all", type.toUpperCase(Locale.ROOT))
                     .formatted(Formatting.GREEN));
             return list(context, directory);
         } catch (Exception e) {
-            context.getSource().sendError(ServerCoreLanguage.text(language, "message.command_error", e.getMessage()));
+            context.getSource().sendError(CoreAffinityLanguage.text(language, "message.command_error", e.getMessage()));
             return 0;
         }
     }
@@ -348,7 +348,7 @@ public final class ServerCoreCommand {
             DRAFTS.put(source.getServer(), new Draft(draftGroups(source, config), avoidSmt, UUID.randomUUID().toString()));
             return list(context, directory);
         } catch (Exception e) {
-            source.sendError(ServerCoreLanguage.text(language(source, directory), "message.apply_failed"));
+            source.sendError(CoreAffinityLanguage.text(language(source, directory), "message.apply_failed"));
             return 0;
         }
     }
@@ -358,7 +358,7 @@ public final class ServerCoreCommand {
         String language = language(source, directory);
         Draft draft = DRAFTS.get(source.getServer());
         if (draft == null || !draft.token().equals(StringArgumentType.getString(context, "confirmation"))) {
-            source.sendError(ServerCoreLanguage.text(language, "message.stale"));
+            source.sendError(CoreAffinityLanguage.text(language, "message.stale"));
             return 0;
         }
         if (!source.getServer().isOnThread()) {
@@ -368,11 +368,11 @@ public final class ServerCoreCommand {
         try {
             List<Integer> actual = BigCoreFabric.service.applyServerGroups(draft.groups(), draft.avoidSmt(), directory);
             DRAFTS.remove(source.getServer());
-            feedback(source, ServerCoreLanguage.text(language, "message.applied", actual.toString()).formatted(Formatting.GREEN));
+            feedback(source, CoreAffinityLanguage.text(language, "message.applied", actual.toString()).formatted(Formatting.GREEN));
             return 1;
         } catch (Exception | LinkageError e) {
             org.slf4j.LoggerFactory.getLogger("CoreAffinity").error("Could not apply server affinity", e);
-            source.sendError(ServerCoreLanguage.text(language, "message.apply_failed"));
+            source.sendError(CoreAffinityLanguage.text(language, "message.apply_failed"));
             return 0;
         }
     }
@@ -380,7 +380,7 @@ public final class ServerCoreCommand {
     private static Text groupSummary(String language, String group, Set<Integer> ids, List<Cpu> topology, Formatting color) {
         String value = ids.stream().sorted().map(id -> topology.stream().filter(cpu -> cpu.id() == id).findFirst()
                 .map(cpu -> coreName(cpu, topology)).orElse(String.valueOf(id))).reduce((a, b) -> a + "," + b).orElse("");
-        return Text.literal(ServerCoreLanguage.value(language, "group." + group) + ":" + value).formatted(color);
+        return Text.literal(CoreAffinityLanguage.value(language, "group." + group) + ":" + value).formatted(color);
     }
 
     private static String coreName(Cpu cpu, List<Cpu> topology) {
@@ -405,10 +405,10 @@ public final class ServerCoreCommand {
         catch (Exception ignored) { return "en_us"; }
     }
     private static String language(ServerCommandSource source, Path directory, AffinityConfig config) {
-        String resolved = ServerCoreLanguage.resolve(config, directory);
+        String resolved = CoreAffinityLanguage.resolve(config, directory);
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) return resolved;
         return PLAYER_LANGUAGES.getOrDefault(player.getUuid(), resolved);
     }
-    private static String language(Path directory, AffinityConfig config) { return ServerCoreLanguage.resolve(config, directory); }
+    private static String language(Path directory, AffinityConfig config) { return CoreAffinityLanguage.resolve(config, directory); }
 }

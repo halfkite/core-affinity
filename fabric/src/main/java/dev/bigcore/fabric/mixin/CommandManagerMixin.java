@@ -1,7 +1,7 @@
 package dev.bigcore.fabric.mixin;
 
 import com.mojang.brigadier.CommandDispatcher;
-import dev.bigcore.fabric.ServerCoreCommand;
+import dev.bigcore.fabric.CoreAffinityCommand;
 import dev.bigcore.fabric.BigCoreFabric;
 import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.server.command.CommandManager;
@@ -18,8 +18,8 @@ public abstract class CommandManagerMixin {
     @Shadow @Final private CommandDispatcher<ServerCommandSource> dispatcher;
 
     @Inject(method = "<init>", at = @At("TAIL"))
-    private void servercore$register(CommandManager.RegistrationEnvironment environment,
+    private void coreaffinity$register(CommandManager.RegistrationEnvironment environment,
                                      CommandRegistryAccess registryAccess, CallbackInfo ci) {
-        ServerCoreCommand.register(dispatcher, BigCoreFabric.configDirectory);
+        CoreAffinityCommand.register(dispatcher, BigCoreFabric.configDirectory);
     }
 }

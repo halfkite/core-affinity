@@ -85,24 +85,21 @@ Check `physicalCore` in the startup log. Two logical CPUs with the same `physica
 
 ## In-game commands
 
-Run `/servercore help` after the server starts. Help text comes from language resources rather than hard-coded Java strings. Language resolution checks the mod configuration first, then Carpet when installed, then the Java/system locale.
-
-Use `/servercore language` to open the language menu. `/servercore language zh_cn` and `/servercore language en_us` set a player's personal display language. A player with permission level 2 can click the prompt to make that language the server-wide default; otherwise the change remains personal. The language argument supports completion, and candidates are discovered from the actual mod language files.
-
-`/servercore list` shows every visible logical CPU with a P/E label and its current group. Each row has clickable Main, Shared, Disabled, and Unassigned buttons. The current group is blue; other buttons are gray. The page also provides Disable all P, Disable all E, SMT filtering, and Refresh buttons.
-
-Group changes are staged in memory. They do not rebind the server thread or write the file until a permission-level-2 user clicks **Confirm apply**. The confirmation applies the mask on the real server thread, verifies the readback, and then saves `core-affinity.json5`. A later edit invalidates earlier confirmation buttons.
-
-Useful command forms:
+Commands are clickable for completion in the in-game help. The gray text after `#` is the short description.
 
 ```text
-/servercore assign <cpu> <main|shared|disabled|unassigned>
-/servercore disable-all <p|e>
-/servercore smt <off|on>
-/servercore apply <confirmation-token>
+/coreaffinity help #Show help
+/coreaffinity language <language> #Set your display language
+/coreaffinity list #Show CPU core groups
+/coreaffinity assign <cpu> <main|shared|disabled|unassigned> #Change a core group
+/coreaffinity disable-all <p|e> #Disable all P-cores or E-cores
+/coreaffinity language global <language> #Set the server-wide language
+/coreaffinity language personal <language> #Set only your own language
+/coreaffinity smt <off|on> #Set main-thread SMT filtering
+/coreaffinity apply <confirmation-token> #Apply pending groups
 ```
 
-`/servercore smt off` keeps one selected logical thread per physical core. It filters only the server main-thread mask; it does not disable hardware SMT or restrict worker threads.
+`/coreaffinity language zh_cn` and `/coreaffinity language en_us` ask whether to make the selected language server-wide; declining keeps it personal. Core-list edits stay pending until a permission-level-2 player clicks **Confirm apply**, which updates the binding and saves `core-affinity.json5`.
 
 ## Logs and verification
 
