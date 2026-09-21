@@ -56,7 +56,7 @@ Carpet 文件是 `fabric-carpet-1.21-1.4.147+v240613.jar`，兼容 Minecraft 1.2
 /coreaffinity disable-all e
 ```
 
-结果：中文帮助、英文帮助、动态语言菜单、CPU 列表、P/E 标注、核心分组命令和一键禁用 E 核均成功。帮助日志显示指令与灰色说明分开输出；指令使用可点击补全事件。列表行实际输出为 `0P  [main] ...`、`10P [main] ...`，核心标签固定宽度；按钮状态由当前分组决定，默认灰色、选中蓝色。服务端随后正常执行 `stop`，退出码为 0。冒烟脚本为 [coreaffinity-command-smoke.ps1](D:/ai/dxh/test-runs/coreaffinity-command-smoke.ps1)。
+结果：中文帮助、英文帮助、动态语言菜单、CPU 列表、P/E 标注、核心分组命令和一键禁用 E 核均成功。帮助日志显示可点击指令与 `#` 后的灰色说明；指令使用可点击补全事件。列表行实际输出为 `0P  [main] ...`、`10P [main] ...`，核心标签固定宽度；按钮状态由当前分组决定，默认灰色、选中蓝色。服务端随后正常执行 `stop`，退出码为 0。冒烟脚本为 [coreaffinity-command-smoke.ps1](D:/ai/dxh/test-runs/coreaffinity-command-smoke.ps1)。
 
 ## 核心分组与 P/E 对比测试（2026-09-21）
 
