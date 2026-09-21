@@ -63,4 +63,13 @@ class ConfigTest {
         assertEquals("zh_cn", config.language());
         assertEquals(Policy.Mode.AUTO, config.server().mode());
     }
+
+    @Test void savesClientPolicyWithoutDroppingServerSettings() throws Exception {
+        AffinityConfig.load(temp);
+        AffinityConfig.saveClientPolicy(temp, new Policy(Policy.Mode.EXPLICIT, Set.of(2, 4), -1));
+        AffinityConfig config = AffinityConfig.load(temp);
+        assertEquals(Policy.Mode.EXPLICIT, config.client().mode());
+        assertEquals(Set.of(2, 4), config.client().cpus());
+        assertEquals(Policy.Mode.AUTO, config.server().mode());
+    }
 }

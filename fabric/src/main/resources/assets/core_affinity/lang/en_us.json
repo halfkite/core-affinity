@@ -1,0 +1,18 @@
+{
+  "screen.core_affinity.title": "Core Affinity client settings",
+  "screen.core_affinity.mode": "Mode: %s",
+  "screen.core_affinity.mode_label": "Client main thread mode",
+  "screen.core_affinity.mode.auto": "Auto (P-cores)",
+  "screen.core_affinity.mode.explicit": "Explicit CPU list",
+  "screen.core_affinity.mode.off": "Disabled",
+  "screen.core_affinity.cpus_label": "Logical CPUs (comma/ranges)",
+  "screen.core_affinity.cpus": "Logical CPUs",
+  "screen.core_affinity.cpus_placeholder": "Example: 2,4-6",
+  "screen.core_affinity.core_index_label": "Physical P-core index (-1 = all)",
+  "screen.core_affinity.core_index": "P-core index",
+  "screen.core_affinity.save": "Save",
+  "screen.core_affinity.restart": "Restart the game to apply client affinity changes.",
+  "screen.core_affinity.saved": "Core Affinity client settings saved. Restart the game to apply them.",
+  "screen.core_affinity.load_error": "Could not load the current configuration.",
+  "screen.core_affinity.invalid": "Invalid value: %s"
+}

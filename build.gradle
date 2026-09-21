@@ -2,7 +2,10 @@ plugins { id 'fabric-loom' version '1.17.21' apply false }
 allprojects {
     group = 'dev.bigcore'
     version = '1.0.0+mc1.21.1'
-    repositories { mavenCentral() }
+    repositories {
+        mavenCentral()
+        maven { name = 'Terraformers'; url = 'https://maven.terraformersmc.com/' }
+    }
 }
 subprojects {
     apply plugin: 'java-library'

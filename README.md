@@ -110,6 +110,8 @@ CPU 编号从 0 开始。Windows 编号为 `processor group * 64 + group 内编�
 
 玩家执行 `/coreaffinity language zh_cn` 或 `/coreaffinity language en_us` 后，可以在聊天栏选择是否设为全服默认；不确认则只改变自己的显示。核心列表中的按钮修改待应用方案，权限等级 2 的玩家点击确认后才会在线更新绑定并保存配置。
 
+客户端安装 [Mod Menu](https://modrinth.com/mod/modmenu) 后，可以在模组列表中打开 Core Affinity 的配置页面，修改客户端模式、逻辑 CPU 列表和物理大核序号。保存后重启游戏，客户端主线程绑定才会更新。
+
 ## 系统支持与边界
 
 - Windows 10+/Windows Server 2016+，64 位：用 `GetSystemCpuSetInformation` 的 EfficiencyClass 判断性能等级，用 `SetThreadGroupAffinity` 硬绑定。当前版本只使用初始化线程所在 processor group 中原本允许的 CPU，不支持跨 group 迁移；一般 <=64 逻辑 CPU 的桌面机器只有一个 group。
