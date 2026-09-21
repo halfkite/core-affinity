@@ -101,7 +101,7 @@ Commands are clickable for completion in the in-game help. The gray text after `
 
 `/coreaffinity language zh_cn` and `/coreaffinity language en_us` ask whether to make the selected language server-wide; declining keeps it personal. Core-list edits stay pending until a permission-level-2 player clicks **Confirm apply**, which updates the binding and saves `core-affinity.json5`.
 
-With [Mod Menu](https://modrinth.com/mod/modmenu) installed on the client, open Core Affinity from the Mods screen to edit the client mode, logical CPU list, and physical P-core index. Restart the game after saving for the client-thread binding to take effect.
+With [Mod Menu](https://modrinth.com/mod/modmenu) installed on the client, open Core Affinity from the Mods screen to edit the server, client, language, SMT, and CPU-group settings. Restart the client after saving for the client-thread binding to take effect; dedicated-server settings still belong in the server instance.
 
 ## Platform boundaries
 

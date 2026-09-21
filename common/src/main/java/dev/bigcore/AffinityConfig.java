@@ -84,6 +84,10 @@ public record AffinityConfig(Policy server, Policy client, CoreGroups groups, St
                 current.language(), current.avoidSmt()));
     }
 
+    public static void saveAll(Path directory, AffinityConfig config) throws IOException {
+        write(directory, config);
+    }
+
     private static AffinityConfig defaults() {
         return new AffinityConfig(new Policy(Policy.Mode.AUTO, Set.of(), -1),
                 new Policy(Policy.Mode.AUTO, Set.of(), -1), new CoreGroups(), "auto", false);

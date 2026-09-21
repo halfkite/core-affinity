@@ -110,7 +110,7 @@ CPU 编号从 0 开始。Windows 编号为 `processor group * 64 + group 内编�
 
 玩家执行 `/coreaffinity language zh_cn` 或 `/coreaffinity language en_us` 后，可以在聊天栏选择是否设为全服默认；不确认则只改变自己的显示。核心列表中的按钮修改待应用方案，权限等级 2 的玩家点击确认后才会在线更新绑定并保存配置。
 
-客户端安装 [Mod Menu](https://modrinth.com/mod/modmenu) 后，可以在模组列表中打开 Core Affinity 的配置页面，修改客户端模式、逻辑 CPU 列表和物理大核序号。保存后重启游戏，客户端主线程绑定才会更新。
+客户端安装 [Mod Menu](https://modrinth.com/mod/modmenu) 后，可以在模组列表中打开 Core Affinity 的完整配置页面，修改服务端、客户端、语言、SMT 和核心分组。保存后重启客户端，客户端主线程绑定才会更新；专用服务端配置仍应在服务端实例中修改。
 
 ## 系统支持与边界
 
