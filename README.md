@@ -4,7 +4,7 @@ Minecraft **1.21.1 · Fabric · Java 21**。将独立服务端/单人世界服�
 
 ## 安装
 
-Fabric mod id 为 `core_affinity`，显示名称为 `Core Affinity`。把 `core-affinity-fabric-1.0.0+mc1.21.1.jar` 放进对应实例的 `mods` 目录。需要 Fabric Loader 0.16.14 或更高版本；不需要 Fabric API，也不需要另装 JNA（已内嵌）。服务端可单独安装，玩家无需安装；要绑定客户端线程则在客户端也安装。
+Fabric mod id 为 `core_affinity`，显示名称为 `Core Affinity`。升级时先移除旧的 `big-core-affinity-fabric` JAR，避免两个 mod id 同时加载；`config/big-core-affinity.properties` 会继续沿用。然后把 `core-affinity-fabric-1.0.0+mc1.21.1.jar` 放进对应实例的 `mods` 目录。需要 Fabric Loader 0.16.14 或更高版本；不需要 Fabric API，也不需要另装 JNA（已内嵌）。服务端可单独安装，玩家无需安装；要绑定客户端线程则在客户端也安装。
 
 首次启动生成 `config/big-core-affinity.properties`。修改后重启对应实例。默认服务端和客户端均为 `auto`：仅在可靠检测到不同性能等级时绑定到最高等级的全部可用逻辑 CPU；拓扑不明或同构处理器上保持原状，日志提示手动配置。
 
