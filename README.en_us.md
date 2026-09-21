@@ -109,9 +109,9 @@ CPU core groups; click a button to change
 ✕: Disabled cores: never selected
 ?: Unassigned cores: used by map loading and other parallel work
 P means performance core; E means efficiency core
-0P:[✓][✕][?]
-1P:[✓][✕][?]
-2E:[✓][✕][?]
+0P  :[✓][✕][?]
+1P  :[✓][✕][?]
+2E  :[✓][✕][?]
 Quick actions
 [✓all P cores][✓all E cores]
 [✕all P cores][✕all E cores]

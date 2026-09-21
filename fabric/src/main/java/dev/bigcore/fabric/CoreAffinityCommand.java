@@ -256,10 +256,8 @@ public final class CoreAffinityCommand {
                 Text row = Text.literal(String.format(Locale.ROOT, "%-4s:", coreName(cpu, topology)))
                         .append(button(CoreAffinityLanguage.value(language, "button.main"), "/coreaffinity assign " + cpu.id() + " main",
                                 current == CoreGroups.Group.MAIN ? Formatting.BLUE : Formatting.GRAY))
-                        .append(Text.literal(" "))
                         .append(button(CoreAffinityLanguage.value(language, "button.disabled"), "/coreaffinity assign " + cpu.id() + " disabled",
                                 current == CoreGroups.Group.DISABLED ? Formatting.BLUE : Formatting.GRAY))
-                        .append(Text.literal(" "))
                         .append(button(CoreAffinityLanguage.value(language, "button.unassigned"), "/coreaffinity assign " + cpu.id() + " unassigned",
                                 current == CoreGroups.Group.UNASSIGNED ? Formatting.BLUE : Formatting.GRAY));
                 feedback(source, row);
@@ -451,7 +449,6 @@ public final class CoreAffinityCommand {
                                        String rightCommand, Formatting color) {
         return Text.literal("")
                 .append(button(CoreAffinityLanguage.value(language, leftKey), "/coreaffinity " + leftCommand, color))
-                .append(Text.literal(" "))
                 .append(button(CoreAffinityLanguage.value(language, rightKey), "/coreaffinity " + rightCommand, color));
     }
 
