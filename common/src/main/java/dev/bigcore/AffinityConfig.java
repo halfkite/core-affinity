@@ -24,7 +24,7 @@ public record AffinityConfig(Policy server, Policy client, CoreGroups groups, St
     public static final String DEFAULT = """
             {
               // Core Affinity configuration / Core Affinity 配置文件
-              "language": "auto", // Chat language: auto follows config, Carpet, then system / 聊天语言：auto 依次跟随本模组、Carpet、系统语言
+              "language": "auto", // First launch resolves Carpet/system language and writes it here; later starts reuse it / 首次启动读取 Carpet/系统语言并写入此处；后续启动直接复用
               "server": {
                 "mode": "auto", // Server main thread: auto=P cores, explicit=cpus, off=disabled / 服务端主线程：auto=大核，explicit=按 cpus，off=关闭
                 "cpus": [], // Logical CPU IDs used only by explicit mode / 仅 explicit 模式使用的逻辑 CPU 编号
@@ -179,7 +179,7 @@ public record AffinityConfig(Policy server, Policy client, CoreGroups groups, St
         Policy client = config.client();
         return "{\n" +
                 "  // Core Affinity configuration / Core Affinity 配置文件\n" +
-                "  \"language\": \"" + escape(config.language()) + "\", // Chat language: auto follows config, Carpet, then system / 聊天语言：auto 依次跟随本模组、Carpet、系统语言\n" +
+                "  \"language\": \"" + escape(config.language()) + "\", // First launch resolves Carpet/system language and writes it here; later starts reuse it / 首次启动读取 Carpet/系统语言并写入此处；后续启动直接复用\n" +
                 "  \"server\": {\n" +
                 "    \"mode\": \"" + server.mode().name().toLowerCase(Locale.ROOT) + "\", // Server main thread: auto=P cores, explicit=cpus, off=disabled / 服务端主线程：auto=大核，explicit=按 cpus，off=关闭\n" +
                 "    \"cpus\": " + array(server.cpus()) + ", // Logical CPU IDs used only by explicit mode / 仅 explicit 模式使用的逻辑 CPU 编号\n" +

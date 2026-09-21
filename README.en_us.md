@@ -10,12 +10,12 @@ The Fabric mod id is `core_affinity` and the display name is `Core Affinity`. Wh
 
 Put `core-affinity-fabric-1.0.0+mc1.21.1.jar` in the instance `mods` directory. Fabric Loader 0.16.14 or newer is required. Fabric API is not required; JNA is bundled in the mod JAR. The JNA attribution and license are documented in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
 
-The first launch creates `config/core-affinity.json5`. It is JSON5, so it supports trailing comments, bilingual explanations, and trailing commas. The default server and client mode is `auto`: when the operating system reports a reliable heterogeneous topology, the mod selects the available P cores. If the topology cannot be identified, the mod leaves scheduling unchanged and logs a message recommending explicit selection.
+The first launch creates `config/core-affinity.json5`. When `language` is `auto`, Carpet or the system language is checked once on that first launch and the concrete result is written back; later starts reuse the configured language without searching again. The file is JSON5, so it supports trailing comments, bilingual explanations, and trailing commas. The default server and client mode is `auto`: when the operating system reports a reliable heterogeneous topology, the mod selects the available P cores. If the topology cannot be identified, the mod leaves scheduling unchanged and logs a message recommending explicit selection.
 
 ```json5
 {
   // Core Affinity configuration / Core Affinity 配置文件
-  "language": "auto", // Chat language: auto follows config, Carpet, then system / 聊天语言：auto 依次跟随本模组、Carpet、系统语言
+  "language": "auto", // First launch detects Carpet/system language and writes it here; later starts reuse it
   "server": {
     "mode": "auto", // Server main thread: auto=P cores, explicit=cpus, off=disabled / 服务端主线程：auto=大核，explicit=按 cpus，off=关闭
     "cpus": [], // Logical CPU IDs used only by explicit mode / 仅 explicit 模式使用的逻辑 CPU 编号

@@ -22,11 +22,29 @@ final class CoreAffinityLanguage {
     private static final String LANGUAGE_DIRECTORY = "assets/core_affinity/lang";
     private static final Pattern LANGUAGE_FILE = Pattern.compile("coreaffinity_([a-z0-9_]+)\\.properties");
     private static final Pattern CARPET_LANGUAGE = Pattern.compile("(?im)^\\s*(?:language|lang)\\s*[=: ]\\s*([a-z]{2}(?:[_-][a-z]{2})?)\\s*$");
+    private static volatile List<String> cachedLanguages;
     private CoreAffinityLanguage() { }
+
+    /** Resolve auto exactly once during mod initialization, then persist the concrete language. */
+    static AffinityConfig initialize(Path configDirectory) throws IOException {
+        AffinityConfig config = AffinityConfig.load(configDirectory);
+        String configured = normalize(config.language());
+        if (!configured.equals("auto")) return config;
+        String selected = detectInitialLanguage(configDirectory);
+        AffinityConfig resolved = new AffinityConfig(config.server(), config.client(), config.groups(), selected, config.avoidSmt());
+        AffinityConfig.saveAll(configDirectory, resolved);
+        return resolved;
+    }
 
     static String resolve(AffinityConfig config, Path configDirectory) {
         String configured = normalize(config == null ? "auto" : config.language());
+        // The auto value is resolved and persisted by initialize(). Do not inspect Carpet or the system here:
+        // command output can be emitted many times during a server lifetime.
         if (!configured.equals("auto")) return supportedOrEnglish(configured);
+        return "en_us";
+    }
+
+    private static String detectInitialLanguage(Path configDirectory) {
         if (FabricLoader.getInstance().isModLoaded("carpet")) {
             String carpet = carpetLanguage(configDirectory);
             if (carpet != null) return supportedOrEnglish(carpet);
@@ -57,6 +75,8 @@ final class CoreAffinityLanguage {
     static String label(String language) { return value(language, "language." + supportedOrEnglish(normalize(language))); }
 
     static List<String> supportedLanguages() {
+        List<String> cached = cachedLanguages;
+        if (cached != null) return cached;
         SortedSet<String> languages = new TreeSet<>();
         Optional<ModContainer> container = FabricLoader.getInstance().getModContainer("core_affinity");
         if (container.isPresent()) {
@@ -72,7 +92,9 @@ final class CoreAffinityLanguage {
             }
         }
         if (languages.isEmpty()) languages.add("en_us");
-        return List.copyOf(languages);
+        List<String> discovered = List.copyOf(languages);
+        cachedLanguages = discovered;
+        return discovered;
     }
 
     static boolean isSupported(String language) {

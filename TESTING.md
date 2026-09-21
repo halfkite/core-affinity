@@ -64,7 +64,9 @@ Carpet 文件是 `fabric-carpet-1.21-1.4.147+v240613.jar`，兼容 Minecraft 1.2
 
 三个日志均确认主线程分别绑定 `0:0`、`0:12`、`0:2`，没有 `Can't keep up`。四个 Carpet 假玩家分别向四个方向移动约 400–468 格并持续加载地图。45 秒压力期间 JVM 进程 CPU（一个逻辑核满载=100%）稳定阶段平均：server-a `419.9%`、server-b `417.2%`、server-c `439.5%`；峰值分别 `469.1%`、`482.5%`、`526.8%`。这说明 E 核主线程仍能被准确锁定，但该轮负载下不能仅凭总 JVM CPU 百分比断言 P/E 的 TPS 优劣；主线程绑定证据以各服 `bound and verified` 日志为准。共享核心目前保存并显示分组，当前版本只绑定服务器主线程。
 
-最新可安装归档：[mod-builds/20260921-2236](D:/ai/dxh/mod-builds/20260921-2236)，目录时间戳精确到分钟；SHA-256：`65315014155D4C36F4B2C3C046C1D54357078D12DC5F88F6C53F2B2F30DFC3E3`。
+最新可安装归档：[mod-builds/20260921-2243](D:/ai/dxh/mod-builds/20260921-2243)，目录时间戳精确到分钟；SHA-256：`B61C1BC5A36151BD0D189011A7A714A05004D05A9E29A9C192C21C9C7D0A6DB3`。
+
+语言初始化冒烟测试使用空的 `core-affinity.json5` 和旧版 `language=auto` 配置启动 Fabric + Carpet 服务端；首次启动后生成的 JSON5 已写入 `"language": "zh_cn"`。语言来源读取发生在 ModInitializer 初始化阶段，后续指令输出不再读取 Carpet 配置文件或系统 Locale。
 
 ## Confirming live affinity changes (2026-09-21 19:33)
 

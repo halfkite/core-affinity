@@ -8,11 +8,11 @@ Fabric mod id 为 `core_affinity`，显示名称为 `Core Affinity`<br>
 加载器版本要求Fabric Loader 0.16.14+<br>
 前置 [JNA](https://github.com/java-native-access/jna)（已内嵌），JNA 的许可证和归属见仓库中的 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)。服务端可单独安装，玩家无需安装；要绑定客户端线程则在客户端也安装。
 
-首次启动生成 `config/core-affinity.json5`
+首次启动生成 `config/core-affinity.json5`。`language` 为 `auto` 时只在首次启动读取 Carpet 或系统语言，并把结果写回配置；后续启动直接使用配置中的具体语言，不再重复查找。
 ```json5
 {
   // Core Affinity configuration / Core Affinity 配置文件
-  "language": "auto", // Chat language: auto follows config, Carpet, then system / 聊天语言：auto 依次跟随本模组、Carpet、系统语言
+  "language": "auto", // 首次启动读取 Carpet/系统语言并写入此处；后续启动直接复用
   "server": {
     "mode": "auto", // Server main thread: auto=P cores, explicit=cpus, off=disabled / 服务端主线程：auto=大核，explicit=按 cpus，off=关闭
     "cpus": [], // Logical CPU IDs used only by explicit mode / 仅 explicit 模式使用的逻辑 CPU 编号
