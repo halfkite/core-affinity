@@ -1,7 +1,7 @@
-plugins { id 'fabric-loom' version '1.17.21' apply false }
+plugins { id 'net.fabricmc.fabric-loom' version '1.17-SNAPSHOT' apply false }
 allprojects {
     group = 'dev.bigcore'
-    version = '1.0.0+mc1.21.1'
+    version = '1.0.0+mc26.3'
     repositories {
         mavenCentral()
         maven { name = 'Terraformers'; url = 'https://maven.terraformersmc.com/' }
@@ -9,7 +9,7 @@ allprojects {
 }
 subprojects {
     apply plugin: 'java-library'
-    java { toolchain { languageVersion = JavaLanguageVersion.of(21) }; withSourcesJar() }
-    tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8'; options.release = 21 }
+    java { toolchain { languageVersion = JavaLanguageVersion.of(25) }; withSourcesJar() }
+    tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8'; options.release = 25 }
     tasks.withType(Test).configureEach { useJUnitPlatform() }
 }

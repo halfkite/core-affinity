@@ -11,6 +11,6 @@
     "modmenu": ["dev.bigcore.fabric.CoreAffinityModMenu"]
   },
   "mixins": ["core_affinity.mixins.json"],
-  "depends": { "fabricloader": ">=0.16.14", "minecraft": "1.21.1", "java": ">=21" },
-  "suggests": { "modmenu": ">=11.0.3" }
+  "depends": { "fabricloader": ">=0.19.5", "minecraft": "26.3", "java": ">=25" },
+  "suggests": { "modmenu": ">=21.0.0" }
 }

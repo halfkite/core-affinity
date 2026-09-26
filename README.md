@@ -2,10 +2,10 @@
 
 [English](README.en_us.md)
 
-本模组可以将独立服务端/单人世界服务端的 `Server thread`、客户端游戏主线程绑定到大核，或指定的逻辑 CPU。通过原生线程亲和性限制调度位置；不修改整个 Java 进程的亲和性。
+适用于 Minecraft Java **26.3 · Fabric · Java 25**。本模组可以将独立服务端/单人世界服务端的 `Server thread`、客户端游戏主线程绑定到大核，或指定的逻辑 CPU。通过原生线程亲和性限制调度位置；不修改整个 Java 进程的亲和性。
 
 Fabric mod id 为 `core_affinity`，显示名称为 `Core Affinity`<br>
-加载器版本要求Fabric Loader 0.16.14+<br>
+加载器版本要求 Fabric Loader 0.19.5+<br>
 前置 [JNA](https://github.com/java-native-access/jna)（已内嵌），JNA 的许可证和归属见仓库中的 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)。服务端可单独安装，玩家无需安装；要绑定客户端线程则在客户端也安装。
 
 首次启动生成 `config/core-affinity.json5`。`language` 为 `auto` 时只在首次启动读取 Carpet 或系统语言，并把结果写回配置；后续启动直接使用配置中的具体语言，不再重复查找。

@@ -2,13 +2,13 @@
 
 [中文](README.md) | **English**
 
-Minecraft **1.21.1 · Fabric · Java 21**. Core Affinity binds the Minecraft server thread, integrated-server thread, or client main thread to performance cores or explicitly selected logical CPUs. It uses native thread affinity and does not change the affinity of the entire Java process.
+Minecraft **26.3 · Fabric · Java 25**. Core Affinity binds the Minecraft server thread, integrated-server thread, or client main thread to performance cores or explicitly selected logical CPUs. It uses native thread affinity and does not change the affinity of the entire Java process.
 
 ## Installation
 
 The Fabric mod id is `core_affinity` and the display name is `Core Affinity`. When upgrading, remove the old `big-core-affinity-fabric` JAR before installing the new one, so both mod ids are not loaded together. An existing `config/big-core-affinity.properties` file is migrated automatically to `config/core-affinity.json5` and is left untouched.
 
-Put `core-affinity-fabric-1.0.0+mc1.21.1.jar` in the instance `mods` directory. Fabric Loader 0.16.14 or newer is required. Fabric API is not required; JNA is bundled in the mod JAR. The JNA attribution and license are documented in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+Put `core-affinity-fabric-1.0.0+mc26.3.jar` in the instance `mods` directory. Fabric Loader 0.19.5 or newer is required. Fabric API is not required; JNA is bundled in the mod JAR. The JNA attribution and license are documented in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
 
 The first launch creates `config/core-affinity.json5`. When `language` is `auto`, Carpet or the system language is checked once on that first launch and the concrete result is written back; later starts reuse the configured language without searching again. The file is JSON5, so it supports trailing comments, bilingual explanations, and trailing commas. The default server and client mode is `auto`: when the operating system reports a reliable heterogeneous topology, the mod selects the available P cores. If the topology cannot be identified, the mod leaves scheduling unchanged and logs a message recommending explicit selection.
 

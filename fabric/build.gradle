@@ -1,10 +1,9 @@
-plugins { id 'fabric-loom' }
+plugins { id 'net.fabricmc.fabric-loom' }
 base { archivesName = 'core-affinity-fabric' }
 dependencies {
-    minecraft 'com.mojang:minecraft:1.21.1'
-    mappings 'net.fabricmc:yarn:1.21.1+build.3:v2'
-    modImplementation 'net.fabricmc:fabric-loader:0.16.14'
-    modCompileOnly 'com.terraformersmc:modmenu:11.0.3'
+    minecraft 'com.mojang:minecraft:26.3'
+    implementation 'net.fabricmc:fabric-loader:0.19.5'
+    compileOnly 'com.terraformersmc:modmenu:21.0.0'
     implementation project(':common')
     include project(':common')
     include 'net.java.dev.jna:jna:5.14.0'

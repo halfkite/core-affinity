@@ -3,8 +3,8 @@ package dev.bigcore.fabric;
 import dev.bigcore.AffinityConfig;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Component;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -56,9 +56,9 @@ final class CoreAffinityLanguage {
         return supportedOrEnglish(system);
     }
 
-    static MutableText text(String language, String key, Object... args) {
+    static MutableComponent text(String language, String key, Object... args) {
         String template = value(language, key);
-        return Text.literal(args.length == 0 ? template : String.format(Locale.ROOT, template, args));
+        return Component.literal(args.length == 0 ? template : String.format(Locale.ROOT, template, args));
     }
 
     static String value(String language, String key) {

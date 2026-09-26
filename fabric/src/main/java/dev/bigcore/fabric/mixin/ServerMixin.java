@@ -14,13 +14,13 @@ import java.util.function.BooleanSupplier;
 public abstract class ServerMixin {
     @Unique private boolean bigcore$attempted;
     // First tick runs on the real Server thread, after startup has created worker pools.
-    @Inject(method = "tick", at = @At("HEAD"))
+    @Inject(method = "tickServer", at = @At("HEAD"))
     private void bigcore$bind(BooleanSupplier shouldKeepTicking, CallbackInfo ci) {
         if (!bigcore$attempted) {
             bigcore$attempted = true;
             BigCoreFabric.service.bindCurrentThread(AffinityService.Role.SERVER);
         }
     }
-    @Inject(method = "shutdown", at = @At("HEAD"))
+    @Inject(method = "stopServer", at = @At("HEAD"))
     private void bigcore$restore(CallbackInfo ci) { BigCoreFabric.service.restoreCurrentThread(); }
 }

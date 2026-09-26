@@ -2,14 +2,14 @@ package dev.bigcore.fabric.mixin;
 
 import dev.bigcore.AffinityService;
 import dev.bigcore.fabric.BigCoreFabric;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(MinecraftClient.class)
+@Mixin(Minecraft.class)
 public abstract class ClientMixin {
     @Unique private boolean bigcore$attempted;
     @Inject(method = "tick", at = @At("HEAD"))
