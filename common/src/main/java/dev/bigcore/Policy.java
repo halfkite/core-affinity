@@ -7,7 +7,10 @@ public record Policy(Mode mode, Set<Integer> cpus, int coreIndex) {
     public Policy {
         Objects.requireNonNull(mode);
         cpus = Set.copyOf(cpus);
-        if (coreIndex < -1) throw new IllegalArgumentException("coreIndex must be -1 or nonnegative");
+        if (coreIndex < -1 || coreIndex > CpuList.MAX_CPU_ID)
+            throw new IllegalArgumentException("coreIndex must be -1 or a valid physical core index");
+        if (cpus.stream().anyMatch(id -> id < 0 || id > CpuList.MAX_CPU_ID))
+            throw new IllegalArgumentException("CPU id out of range");
         if (mode == Mode.EXPLICIT && cpus.isEmpty()) throw new IllegalArgumentException("explicit mode requires cpus");
     }
     public List<Cpu> select(List<Cpu> topology) {

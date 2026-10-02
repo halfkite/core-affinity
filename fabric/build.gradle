@@ -7,6 +7,8 @@ dependencies {
     implementation project(':common')
     include project(':common')
     include 'net.java.dev.jna:jna:5.14.0'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 processResources {
     inputs.property 'version', project.version
@@ -15,4 +17,8 @@ processResources {
 jar {
     from(rootProject.file('LICENSE'))
     from(rootProject.file('THIRD-PARTY-NOTICES.md'))
+}
+tasks.named('test') {
+    workingDir = layout.buildDirectory.dir('test-runtime').get().asFile
+    doFirst { workingDir.mkdirs() }
 }

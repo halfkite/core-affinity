@@ -9,6 +9,9 @@ import org.slf4j.LoggerFactory;
 /** Loader-neutral entry point. Adapters must invoke it on the actual game/server thread. */
 public final class AffinityService {
     public enum Role { SERVER, CLIENT }
+    public static final class BindingDisabledException extends IllegalStateException {
+        public BindingDisabledException() { super("Server affinity is disabled"); }
+    }
     private static final Logger LOG = LoggerFactory.getLogger("CoreAffinity");
     private volatile AffinityConfig config;
     private final AffinityBackend backend;
@@ -39,14 +42,12 @@ public final class AffinityService {
     public void bindCurrentThread(Role role) {
         if (config == null || restoration.get() != null) return;
         Policy policy = role == Role.SERVER ? config.server() : config.client();
+        if (policy.mode() == Policy.Mode.OFF) return;
         if (role == Role.SERVER && !config.groups().main().isEmpty())
             policy = new Policy(Policy.Mode.EXPLICIT, config.groups().main(), -1);
-        if (policy.mode() == Policy.Mode.OFF) return;
         try {
             if (Thread.currentThread().isVirtual()) throw new IllegalStateException("Cannot bind a virtual thread");
             List<Cpu> topology = effectiveTopology(role);
-            if (role == Role.SERVER && !config.groups().main().isEmpty())
-                policy = new Policy(Policy.Mode.EXPLICIT, config.groups().main(), -1);
             LOG.info("{} CPU topology (id, group, physicalCore, performanceClass, allowed): {}", role, topology);
             List<Cpu> selected = policy.select(topology);
             if (role == Role.SERVER && config.avoidSmt()) selected = oneThreadPerCore(selected);
@@ -69,26 +70,33 @@ public final class AffinityService {
 
     public List<Integer> applyServerGroups(CoreGroups groups, boolean avoidSmt, Path directory) throws Exception {
         if (backend == null || config == null) throw new IllegalStateException("Affinity unavailable");
-        Policy policy = groups.main().isEmpty() ? config.server()
-                : new Policy(Policy.Mode.EXPLICIT, groups.main(), -1);
-        List<Cpu> available = startupTopology.stream().map(cpu -> groups.disabled().contains(cpu.id())
-                ? new Cpu(cpu.id(), cpu.group(), cpu.physicalCore(), cpu.performanceClass(), false) : cpu).toList();
-        List<Cpu> selected = policy.select(available);
-        if (avoidSmt) selected = oneThreadPerCore(selected);
-        if (selected.isEmpty()) throw new IllegalArgumentException("No target CPUs selected");
-        AutoCloseable rollback = backend.bind(selected);
-        try {
-            AffinityConfig.saveServerSettings(directory, groups, avoidSmt);
-        } catch (Exception e) {
-            try { rollback.close(); } catch (Exception restoreError) { e.addSuppressed(restoreError); }
-            throw e;
+        // Use the same lock as configuration edits, including the client editor in singleplayer.
+        // The active plan and persisted policy must stay consistent throughout the transaction.
+        synchronized (AffinityConfig.class) {
+            AffinityConfig current = AffinityConfig.load(directory);
+            if (current.server().mode() == Policy.Mode.OFF) throw new BindingDisabledException();
+            if (Thread.currentThread().isVirtual()) throw new IllegalStateException("Cannot bind a virtual thread");
+            Policy policy = groups.main().isEmpty() ? current.server()
+                    : new Policy(Policy.Mode.EXPLICIT, groups.main(), -1);
+            List<Cpu> available = startupTopology.stream().map(cpu -> groups.disabled().contains(cpu.id())
+                    ? new Cpu(cpu.id(), cpu.group(), cpu.physicalCore(), cpu.performanceClass(), false) : cpu).toList();
+            List<Cpu> selected = policy.select(available);
+            if (avoidSmt) selected = oneThreadPerCore(selected);
+            if (selected.isEmpty()) throw new IllegalArgumentException("No target CPUs selected");
+            AutoCloseable rollback = backend.bind(selected);
+            try {
+                AffinityConfig.saveServerSettings(directory, groups, avoidSmt);
+            } catch (Exception e) {
+                try { rollback.close(); } catch (Exception restoreError) { e.addSuppressed(restoreError); }
+                throw e;
+            }
+            // Keep the original pre-mod mask for shutdown, not the mask from the last update.
+            if (restoration.get() == null) restoration.set(rollback);
+            config = new AffinityConfig(current.server(), current.client(), groups, current.language(), avoidSmt);
+            List<Integer> ids = selected.stream().map(Cpu::id).toList();
+            LOG.info("SERVER thread '{}' rebound and verified: logical CPUs {}", Thread.currentThread().getName(), ids);
+            return ids;
         }
-        // Keep the original pre-mod mask for shutdown, not the mask from the last update.
-        if (restoration.get() == null) restoration.set(rollback);
-        config = new AffinityConfig(config.server(), config.client(), groups, config.language(), avoidSmt);
-        List<Integer> ids = selected.stream().map(Cpu::id).toList();
-        LOG.info("SERVER thread '{}' rebound and verified: logical CPUs {}", Thread.currentThread().getName(), ids);
-        return ids;
     }
 
     /** Choose the lowest selected logical ID for each physical core; never assume even/odd siblings. */

@@ -3,6 +3,7 @@ package dev.bigcore;
 import java.util.*;
 
 public final class CpuList {
+    public static final int MAX_CPU_ID = 1048575;
     private CpuList() {}
     public static Set<Integer> parse(String text) {
         Set<Integer> result = new TreeSet<>();
@@ -12,7 +13,7 @@ public final class CpuList {
             if (range.length > 2) throw new IllegalArgumentException("Invalid CPU range: " + token);
             int first = Integer.parseInt(range[0].trim());
             int last = range.length == 2 ? Integer.parseInt(range[1].trim()) : first;
-            if (first < 0 || last < first || last > 1048575)
+            if (first < 0 || last < first || last > MAX_CPU_ID)
                 throw new IllegalArgumentException("Invalid CPU range: " + token);
             for (int i = first; i <= last; i++) result.add(i);
         }

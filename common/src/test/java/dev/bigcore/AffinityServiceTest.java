@@ -68,4 +68,50 @@ class AffinityServiceTest {
         service.restoreCurrentThread();
         assertEquals(List.of(0,1), backend.mask);
     }
+
+    @Test void offModeWinsOverSavedGroupsAtStartupAndOnApply() throws Exception {
+        Backend backend = new Backend();
+        Policy off = new Policy(Policy.Mode.OFF, Set.of(), -1);
+        CoreGroups groups = new CoreGroups(Set.of(1), Set.of(), Set.of());
+        AffinityConfig saved = new AffinityConfig(off, off, groups, "en_us");
+        AffinityConfig.saveAll(directory, saved);
+        AffinityService service = new AffinityService(saved, backend, backend.cpus);
+        service.bindCurrentThread(AffinityService.Role.SERVER);
+        assertEquals(List.of(0, 1), backend.mask);
+        assertThrows(AffinityService.BindingDisabledException.class,
+                () -> service.applyServerGroups(groups, true, directory));
+        assertEquals(List.of(0, 1), backend.mask);
+        assertEquals(saved, AffinityConfig.load(directory));
+    }
+
+    @Test void applyHonorsOffModeSavedAfterServiceInitialization() throws Exception {
+        Backend backend = new Backend();
+        AffinityConfig initial = AffinityConfig.load(directory);
+        AffinityService service = new AffinityService(initial, backend, backend.cpus);
+        AffinityConfig.saveAll(directory, new AffinityConfig(
+                new Policy(Policy.Mode.OFF, Set.of(), -1), initial.client()));
+        assertThrows(AffinityService.BindingDisabledException.class,
+                () -> service.applyServerGroups(new CoreGroups(Set.of(1), Set.of(), Set.of()), directory));
+        assertEquals(List.of(0, 1), backend.mask);
+    }
+
+    @Test void atomicSaveFailureRollsBackBindingAndKeepsPreviousConfiguration() throws Exception {
+        org.junit.jupiter.api.Assumptions.assumeTrue(System.getProperty("os.name").startsWith("Windows"));
+        Backend backend = new Backend();
+        AffinityConfig initial = AffinityConfig.load(directory);
+        AffinityService service = new AffinityService(initial, backend, backend.cpus);
+        service.applyServerGroups(new CoreGroups(Set.of(0), Set.of(), Set.of()), directory);
+        Path file = directory.resolve("core-affinity.json5");
+        String original = Files.readString(file);
+        try (var ignored = java.nio.channels.FileChannel.open(file, StandardOpenOption.READ,
+                com.sun.nio.file.ExtendedOpenOption.NOSHARE_DELETE)) {
+            assertThrows(java.io.IOException.class,
+                    () -> service.applyServerGroups(new CoreGroups(Set.of(1), Set.of(), Set.of()), directory));
+            assertEquals(List.of(0), backend.mask);
+            assertEquals(original, Files.readString(file));
+            assertEquals(Set.of(0), service.config().groups().main());
+        }
+        service.restoreCurrentThread();
+        assertEquals(List.of(0, 1), backend.mask);
+    }
 }

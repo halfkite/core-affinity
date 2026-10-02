@@ -23,7 +23,9 @@ import static net.minecraft.commands.Commands.literal;
 
 public final class CoreAffinityCommand {
     private static final Map<UUID, String> PLAYER_LANGUAGES = new ConcurrentHashMap<>();
-    private record Draft(CoreGroups groups, boolean avoidSmt, String token) { }
+    record Draft(CoreGroups groups, boolean avoidSmt, String token) {
+        boolean confirms(String confirmation) { return token.equals(confirmation); }
+    }
     private static final Map<net.minecraft.server.MinecraftServer, Draft> DRAFTS = new WeakHashMap<>();
     private CoreAffinityCommand() { }
 
@@ -187,6 +189,10 @@ public final class CoreAffinityCommand {
     }
 
     private static int setGlobalLanguageValue(CommandSourceStack source, Path directory, String selected) {
+        if (!net.minecraft.commands.Commands.LEVEL_GAMEMASTERS.check(source.permissions())) {
+            source.sendFailure(CoreAffinityLanguage.text(language(source, directory), "message.no_permission"));
+            return 0;
+        }
         try {
             AffinityConfig.saveLanguage(directory, selected);
             ServerPlayer player = source.getPlayer();
@@ -270,9 +276,10 @@ public final class CoreAffinityCommand {
             feedback(source, quickActionRow(language, "button.main_p", "assign-all p main", "button.main_e", "assign-all e main", ChatFormatting.GREEN));
             feedback(source, quickActionRow(language, "button.disabled_p", "assign-all p disabled", "button.disabled_e", "assign-all e disabled", ChatFormatting.RED));
             feedback(source, quickActionRow(language, "button.unassigned_p", "assign-all p unassigned", "button.unassigned_e", "assign-all e unassigned", ChatFormatting.GRAY));
-            if (DRAFTS.containsKey(source.getServer())) feedback(source, CoreAffinityLanguage.text(language, "message.pending").withStyle(ChatFormatting.YELLOW));
-            if (net.minecraft.commands.Commands.LEVEL_GAMEMASTERS.check(source.permissions())) feedback(source, button(CoreAffinityLanguage.value(language, "button.apply"),
-                    "/coreaffinity apply", ChatFormatting.GREEN));
+            Draft draft = DRAFTS.get(source.getServer());
+            if (draft != null) feedback(source, CoreAffinityLanguage.text(language, "message.pending").withStyle(ChatFormatting.YELLOW));
+            if (net.minecraft.commands.Commands.LEVEL_GAMEMASTERS.check(source.permissions()))
+                feedback(source, applyButton(language, draft));
             return 1;
         } catch (Exception e) {
             source.sendFailure(CoreAffinityLanguage.text(language(source, directory), "message.config_error", e.getMessage()));
@@ -398,6 +405,10 @@ public final class CoreAffinityCommand {
 
     private static int applyCurrent(CommandContext<CommandSourceStack> context, Path directory) {
         CommandSourceStack source = context.getSource();
+        if (!source.getServer().isSameThread()) {
+            source.getServer().execute(() -> applyCurrent(context, directory));
+            return 1;
+        }
         try {
             AffinityConfig config = AffinityConfig.load(directory);
             Draft draft = DRAFTS.get(source.getServer());
@@ -412,15 +423,16 @@ public final class CoreAffinityCommand {
 
     private static int apply(CommandContext<CommandSourceStack> context, Path directory) {
         CommandSourceStack source = context.getSource();
-        String language = language(source, directory);
-        Draft draft = DRAFTS.get(source.getServer());
-        if (draft == null || !draft.token().equals(StringArgumentType.getString(context, "confirmation"))) {
-            source.sendFailure(CoreAffinityLanguage.text(language, "message.stale"));
-            return 0;
-        }
+        // Revalidate on the server thread: the draft can change while this command is queued.
         if (!source.getServer().isSameThread()) {
             source.getServer().execute(() -> apply(context, directory));
             return 1;
+        }
+        String language = language(source, directory);
+        Draft draft = DRAFTS.get(source.getServer());
+        if (draft == null || !draft.confirms(StringArgumentType.getString(context, "confirmation"))) {
+            source.sendFailure(CoreAffinityLanguage.text(language, "message.stale"));
+            return 0;
         }
         return applyNow(source, directory, draft.groups(), draft.avoidSmt());
     }
@@ -436,6 +448,9 @@ public final class CoreAffinityCommand {
             DRAFTS.remove(source.getServer());
             feedback(source, CoreAffinityLanguage.text(language, "message.applied", actual.toString()).withStyle(ChatFormatting.GREEN));
             return 1;
+        } catch (AffinityService.BindingDisabledException e) {
+            source.sendFailure(CoreAffinityLanguage.text(language, "message.binding_disabled"));
+            return 0;
         } catch (Exception | LinkageError e) {
             org.slf4j.LoggerFactory.getLogger("CoreAffinity").error("Could not apply server affinity", e);
             source.sendFailure(CoreAffinityLanguage.text(language, "message.apply_failed"));
@@ -466,6 +481,12 @@ public final class CoreAffinityCommand {
     private static Component button(String label, String command, ChatFormatting color) {
         return Component.literal("[" + label + "]").withStyle(color)
                 .withStyle(style -> style.withClickEvent(new ClickEvent.RunCommand(command)));
+    }
+
+    static Component applyButton(String language, Draft draft) {
+        String label = CoreAffinityLanguage.value(language, "button.apply");
+        if (draft == null) return Component.literal("[" + label + "]").withStyle(ChatFormatting.GRAY);
+        return button(label, "/coreaffinity apply " + draft.token(), ChatFormatting.GREEN);
     }
 
     private static void feedback(CommandSourceStack source, Component text) { source.sendSuccess(() -> text, false); }

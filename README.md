@@ -6,6 +6,7 @@
 
 Fabric mod id 为 `core_affinity`，显示名称为 `Core Affinity`<br>
 加载器版本要求 Fabric Loader 0.19.5+<br>
+开发构建的文件名包含 `yyyyMMddHHmm` 时间戳，精确到分钟（UTC+8）。
 前置 [JNA](https://github.com/java-native-access/jna)（已内嵌），JNA 的许可证和归属见仓库中的 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)。服务端可单独安装，玩家无需安装；要绑定客户端线程则在客户端也安装。
 
 首次启动生成 `config/core-affinity.json5`。`language` 为 `auto` 时只在首次启动读取 Carpet 或系统语言，并把结果写回配置；后续启动直接使用配置中的具体语言，不再重复查找。
@@ -55,6 +56,8 @@ Linux 为内核 CPU 编号<br>
 ```
 
 玩家执行 `/coreaffinity language zh_cn` 或 `/coreaffinity language en_us` 后，可以在聊天栏选择是否设为全服默认；不确认则只改变自己的显示。核心列表中的按钮修改待应用方案，权限等级 2 的玩家点击确认后才会在线更新绑定并保存配置。
+
+确认按钮对应点击前显示的方案；方案被再次修改后，旧按钮会失效，需要重新查看列表。`server.mode=off` 优先于主核心分组，关闭时不会应用分组绑核。
 
 `/coreaffinity list` 的核心分组界面如下；按钮会根据当前状态显示为选中颜色，点击后只修改待应用方案：
 

@@ -2,10 +2,14 @@ package dev.bigcore;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.math.BigDecimal;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
 
 /** JSON5-backed configuration with migration from the original properties file. */
@@ -44,7 +48,7 @@ public record AffinityConfig(Policy server, Policy client, CoreGroups groups, St
             }
             """;
 
-    public static AffinityConfig load(Path directory) throws IOException {
+    public static synchronized AffinityConfig load(Path directory) throws IOException {
         Files.createDirectories(directory);
         Path file = directory.resolve(FILE_NAME);
         if (!Files.exists(file)) {
@@ -60,31 +64,31 @@ public record AffinityConfig(Policy server, Policy client, CoreGroups groups, St
         }
     }
 
-    public static void saveGroups(Path directory, CoreGroups groups) throws IOException {
+    public static synchronized void saveGroups(Path directory, CoreGroups groups) throws IOException {
         AffinityConfig current = load(directory);
         write(directory, new AffinityConfig(current.server(), current.client(), groups,
                 current.language(), current.avoidSmt()));
     }
 
-    public static void saveServerSettings(Path directory, CoreGroups groups, boolean avoidSmt) throws IOException {
+    public static synchronized void saveServerSettings(Path directory, CoreGroups groups, boolean avoidSmt) throws IOException {
         AffinityConfig current = load(directory);
         write(directory, new AffinityConfig(current.server(), current.client(), groups,
                 current.language(), avoidSmt));
     }
 
-    public static void saveLanguage(Path directory, String language) throws IOException {
+    public static synchronized void saveLanguage(Path directory, String language) throws IOException {
         AffinityConfig current = load(directory);
         write(directory, new AffinityConfig(current.server(), current.client(), current.groups(),
                 language, current.avoidSmt()));
     }
 
-    public static void saveClientPolicy(Path directory, Policy client) throws IOException {
+    public static synchronized void saveClientPolicy(Path directory, Policy client) throws IOException {
         AffinityConfig current = load(directory);
         write(directory, new AffinityConfig(current.server(), client, current.groups(),
                 current.language(), current.avoidSmt()));
     }
 
-    public static void saveAll(Path directory, AffinityConfig config) throws IOException {
+    public static synchronized void saveAll(Path directory, AffinityConfig config) throws IOException {
         write(directory, config);
     }
 
@@ -129,7 +133,7 @@ public record AffinityConfig(Policy server, Policy client, CoreGroups groups, St
     private static Policy readPolicy(Map<String, Object> values, String role) {
         String modeText = string(values.getOrDefault("mode", "auto"), role + ".mode");
         Set<Integer> cpus = readCpus(values.getOrDefault("cpus", List.of()), role + ".cpus");
-        int coreIndex = number(values.getOrDefault("coreIndex", -1), role + ".coreIndex").intValue();
+        int coreIndex = integer(values.getOrDefault("coreIndex", -1), role + ".coreIndex", -1, CpuList.MAX_CPU_ID);
         return new Policy(Policy.Mode.valueOf(modeText.trim().toUpperCase(Locale.ROOT)), cpus, coreIndex);
     }
 
@@ -137,7 +141,7 @@ public record AffinityConfig(Policy server, Policy client, CoreGroups groups, St
         if (value instanceof String text) return CpuList.parse(text);
         if (!(value instanceof List<?> list)) throw new IllegalArgumentException(field + " must be an array");
         Set<Integer> result = new LinkedHashSet<>();
-        for (Object item : list) result.add(number(item, field).intValue());
+        for (Object item : list) result.add(integer(item, field, 0, CpuList.MAX_CPU_ID));
         return Set.copyOf(result);
     }
 
@@ -148,13 +152,14 @@ public record AffinityConfig(Policy server, Policy client, CoreGroups groups, St
         return result;
     }
 
-    private static Number number(Object value, String field) {
-        if (value instanceof Number number) return number;
-        if (value instanceof String text) {
-            try { return Integer.valueOf(text.trim()); }
-            catch (NumberFormatException ignored) { }
+    private static int integer(Object value, String field, int minimum, int maximum) {
+        if (value instanceof Number || value instanceof String) {
+            try {
+                int result = new BigDecimal(value.toString().trim()).intValueExact();
+                if (result >= minimum && result <= maximum) return result;
+            } catch (NumberFormatException | ArithmeticException ignored) { }
         }
-        throw new IllegalArgumentException(field + " must be a number");
+        throw new IllegalArgumentException(field + " must be an integer between " + minimum + " and " + maximum);
     }
 
     private static String string(Object value, String field) {
@@ -169,9 +174,22 @@ public record AffinityConfig(Policy server, Policy client, CoreGroups groups, St
     }
 
     private static void write(Path directory, AffinityConfig config) throws IOException {
+        byte[] contents = render(config).getBytes(StandardCharsets.UTF_8);
         Files.createDirectories(directory);
-        Files.writeString(directory.resolve(FILE_NAME), render(config), StandardCharsets.UTF_8,
-                StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
+        Path temporary = Files.createTempFile(directory, ".core-affinity-", ".tmp");
+        try {
+            try (FileChannel channel = FileChannel.open(temporary, StandardOpenOption.WRITE)) {
+                ByteBuffer buffer = ByteBuffer.wrap(contents);
+                while (buffer.hasRemaining()) channel.write(buffer);
+                channel.force(true);
+            }
+            // Keep the previous file intact if writing or atomic replacement fails.
+            // A non-atomic fallback would reintroduce partial configuration reads.
+            Files.move(temporary, directory.resolve(FILE_NAME),
+                    StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+        } finally {
+            Files.deleteIfExists(temporary);
+        }
     }
 
     private static String render(AffinityConfig config) {

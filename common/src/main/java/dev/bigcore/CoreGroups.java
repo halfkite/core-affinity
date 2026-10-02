@@ -82,7 +82,7 @@ public record CoreGroups(Set<Integer> main, Set<Integer> shared, Set<Integer> di
     public String sharedCsv() { return CpuList.format(shared); }
     public String disabledCsv() { return CpuList.format(disabled); }
 
-    private static boolean invalid(int id) { return id < 0 || id > 1048575; }
+    private static boolean invalid(int id) { return id < 0 || id > CpuList.MAX_CPU_ID; }
     private static Set<Integer> immutable(Set<Integer> value) { return Collections.unmodifiableSet(new TreeSet<>(value)); }
     private static Set<Integer> intersection(Set<Integer> a, Set<Integer> b) {
         Set<Integer> result = new HashSet<>(a);

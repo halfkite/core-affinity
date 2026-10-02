@@ -1,7 +1,11 @@
 plugins { id 'net.fabricmc.fabric-loom' version '1.17-SNAPSHOT' apply false }
+def buildTimestamp = providers.gradleProperty('buildTimestamp').orElse(
+        java.time.LocalDateTime.now(java.time.ZoneId.of('Asia/Hong_Kong'))
+                .format(java.time.format.DateTimeFormatter.ofPattern('yyyyMMddHHmm'))).get()
+if (!(buildTimestamp ==~ /\d{12}/)) throw new GradleException('buildTimestamp must be yyyyMMddHHmm')
 allprojects {
     group = 'dev.bigcore'
-    version = '1.0.0+mc26.3'
+    version = "1.0.1+mc26.3.${buildTimestamp}"
     repositories {
         mavenCentral()
         maven { name = 'Terraformers'; url = 'https://maven.terraformersmc.com/' }

@@ -114,7 +114,7 @@ final class Json5 {
             if (token.equals("null")) return null;
             try {
                 if (token.matches("[-+]?\\d+")) return Long.parseLong(token);
-                return Double.parseDouble(token);
+                return new java.math.BigDecimal(token);
             } catch (NumberFormatException ignored) {
                 fail("Invalid value: " + token);
                 return null;
